@@ -1,6 +1,7 @@
 'use client'
 
 import { Fragment } from 'react'
+import { useState } from 'react'
 import { SectionWithTasks, TaskWithCells, TaskCell, Milestone, MONTHS, CURRENT_MONTH_ID, fmtDate } from '@/lib/database.types'
 
 interface Props {
@@ -16,8 +17,6 @@ interface Props {
   onToggleSection: (sectionId: string) => void
   onAddTaskToSection: (sectionId: string) => void
 }
-
-import { useState } from 'react'
 
 export function GanttTable({
   sections,
@@ -64,12 +63,12 @@ export function GanttTable({
   const renderStatusBadge = (content: string | null) => {
     if (!content) return null
     if (content === '済') {
-      return <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded">✓ 済</span>
+      return <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded">✓ 済</span>
     }
     if (content === '予定') {
-      return <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-medium rounded">● 予定</span>
+      return <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-amber-100 text-amber-700 text-xs font-medium rounded">● 予定</span>
     }
-    return <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded">{content}</span>
+    return <span className="inline-flex items-center px-1.5 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded">{content}</span>
   }
 
   return (
@@ -130,26 +129,25 @@ export function GanttTable({
         </thead>
 
         <tbody>
-          {sections.map((section) => (
-            <Fragment key={section.id}>
-              {/* Section Header */}
-              <tr>
-                <td className="sticky left-0 z-10 bg-slate-200 border border-slate-300 h-8 min-w-[248px] max-w-[248px]">
-                  <div className="flex items-center gap-2 px-3 py-2">
-                    <button
-                      onClick={() => onToggleSection(section.id)}
-                      className="text-xs font-bold text-slate-600 hover:text-slate-800"
-                    >
-                      {section.is_open ? '▼' : '▶'}
-                    </button>
-                    <span
-                      className="w-2 h-2 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: section.color || '#94a3b8' }}
-                    ></span>
-                    <span
-                      onDoubleClick={() => handleSectionNameDoubleClick(section.id, section.name)}
-                      className="font-semibold text-sm text-slate-700 flex-1 cursor-pointer hover:text-slate-900 min-w-0"
-                    >
+          {sections.map((section) => {
+            const completedCount = section.tasks.filter(t => t.cells.some(c => c.content === '済')).length
+            const totalCount = section.tasks.length
+            return (
+              <Fragment key={section.id}>
+                {/* Section Header */}
+                <tr>
+                  <td className="sticky left-0 z-10 bg-slate-200 border border-slate-300 min-w-[248px] max-w-[248px]">
+                    <div className="flex items-center gap-1.5 px-2 h-8">
+                      <button
+                        onClick={() => onToggleSection(section.id)}
+                        className="text-xs text-slate-600 hover:text-slate-800 w-4 shrink-0"
+                      >
+                        {section.is_open ? '▼' : '▶'}
+                      </button>
+                      <span
+                        className="w-2 h-2 rounded-full shrink-0"
+                        style={{ backgroundColor: section.color || '#94a3b8' }}
+                      />
                       {editingSectionId === section.id ? (
                         <input
                           autoFocus
@@ -160,87 +158,80 @@ export function GanttTable({
                             if (e.key === 'Enter') handleSectionNameSave(section.id)
                             if (e.key === 'Escape') setEditingSectionId(null)
                           }}
-                          className="text-sm font-semibold border border-slate-300 rounded px-1 py-0 w-full"
+                          className="text-sm font-semibold border border-slate-300 rounded px-1 py-0 flex-1 min-w-0"
                         />
                       ) : (
-                        section.name
-                      )}
-                    </span>
-                    <span className="text-xs text-slate-600 flex-shrink-0">{section.tasks.length}</span>
-                    <div className="w-10 flex-shrink-0">
-                      <div className="bg-slate-300 rounded-full h-1 overflow-hidden">
-                        <div
-                          className="bg-green-600 h-full"
-                          style={{
-                            width: section.tasks.length > 0
-                              ? `${(section.tasks.filter(t => t.cells.some(c => c.content === '済')).length / section.tasks.length) * 100}%`
-                              : '0%'
-                          }}
-                        ></div>
-                      </div>
-                    </div>
-                    <span className="text-xs text-slate-600 flex-shrink-0">
-                      {section.tasks.filter(t => t.cells.some(c => c.content === '済')).length}/{section.tasks.length}
-                    </span>
-                  </div>
-                </td>
-                {MONTHS.map(month => {
-                  const isCurrentMonth = month.id === CURRENT_MONTH_ID
-                  const isMainEvent = (month as any).isMain
-                  return (
-                    <td
-                      key={month.id}
-                      className={`border border-slate-300 h-8 ${
-                        isMainEvent
-                          ? 'bg-red-50/30'
-                          : isCurrentMonth
-                          ? 'bg-blue-50/40'
-                          : 'bg-slate-50'
-                      }`}
-                    ></td>
-                  )
-                })}
-              </tr>
-
-              {/* Task Rows */}
-              {section.is_open && section.tasks.map(task => {
-                return (
-                  <tr key={task.id} className="hover:bg-slate-50">
-                    <td className="sticky left-0 z-10 bg-white border border-slate-300 px-3 py-1.5 min-w-[248px] max-w-[248px]">
-                      <div className="flex flex-col gap-1">
                         <span
-                          onDoubleClick={() => handleTaskNameDoubleClick(task.id, task.name)}
-                          className="text-sm text-slate-700 cursor-pointer hover:text-slate-900 font-medium leading-tight"
+                          onDoubleClick={() => handleSectionNameDoubleClick(section.id, section.name)}
+                          className="font-semibold text-xs text-slate-700 flex-1 cursor-pointer hover:text-slate-900 min-w-0 truncate"
                         >
-                          {editingTaskId === task.id ? (
-                            <input
-                              autoFocus
-                              value={editingTaskName}
-                              onChange={e => setEditingTaskName(e.target.value)}
-                              onBlur={() => handleTaskNameSave(task.id)}
-                              onKeyDown={e => {
-                                if (e.key === 'Enter') handleTaskNameSave(task.id)
-                                if (e.key === 'Escape') setEditingTaskId(null)
-                              }}
-                              className="text-sm font-medium border border-slate-300 rounded px-1 py-0 w-full"
-                            />
-                          ) : (
-                            task.name
-                          )}
+                          {section.name}
                         </span>
+                      )}
+                      {/* Progress bar */}
+                      <div className="w-8 shrink-0">
+                        <div className="bg-slate-300 rounded-full h-1 overflow-hidden">
+                          <div
+                            className="bg-green-500 h-full"
+                            style={{ width: totalCount > 0 ? `${(completedCount / totalCount) * 100}%` : '0%' }}
+                          />
+                        </div>
+                      </div>
+                      <span className="text-xs text-slate-500 shrink-0 tabular-nums">{completedCount}/{totalCount}</span>
+                    </div>
+                  </td>
+                  {MONTHS.map(month => {
+                    const isCurrentMonth = month.id === CURRENT_MONTH_ID
+                    const isMainEvent = (month as any).isMain
+                    return (
+                      <td
+                        key={month.id}
+                        className={`border border-slate-300 h-8 ${
+                          isMainEvent ? 'bg-red-50/30' : isCurrentMonth ? 'bg-blue-50/40' : 'bg-slate-50'
+                        }`}
+                      />
+                    )
+                  })}
+                </tr>
+
+                {/* Task Rows */}
+                {section.is_open && section.tasks.map(task => (
+                  <tr key={task.id} className="group/row hover:bg-slate-50">
+                    <td className="sticky left-0 z-10 bg-white border border-slate-300 min-w-[248px] max-w-[248px]">
+                      <div className="flex items-center gap-1.5 px-2 h-9">
+                        {editingTaskId === task.id ? (
+                          <input
+                            autoFocus
+                            value={editingTaskName}
+                            onChange={e => setEditingTaskName(e.target.value)}
+                            onBlur={() => handleTaskNameSave(task.id)}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') handleTaskNameSave(task.id)
+                              if (e.key === 'Escape') setEditingTaskId(task.id)
+                            }}
+                            className="text-sm font-medium border border-slate-300 rounded px-1 py-0 flex-1 min-w-0"
+                          />
+                        ) : (
+                          <span
+                            onDoubleClick={() => handleTaskNameDoubleClick(task.id, task.name)}
+                            className="text-xs text-slate-700 cursor-pointer hover:text-slate-900 flex-1 min-w-0 truncate leading-tight"
+                          >
+                            {task.name}
+                          </span>
+                        )}
                         {task.due_date ? (
                           <button
                             onClick={e => onDateChipClick(task.id, task.due_date, e.currentTarget.getBoundingClientRect())}
-                            className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 border border-amber-200 text-amber-700 text-xs rounded hover:bg-amber-100 w-fit"
+                            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-amber-50 border border-amber-200 text-amber-700 text-xs rounded hover:bg-amber-100 shrink-0"
                           >
                             📅 {fmtDate(task.due_date)}
                           </button>
                         ) : (
                           <button
                             onClick={e => onDateChipClick(task.id, null, e.currentTarget.getBoundingClientRect())}
-                            className="text-xs text-blue-600 hover:text-blue-800 underline w-fit"
+                            className="text-xs text-slate-400 hover:text-blue-600 shrink-0 opacity-0 group-hover/row:opacity-100 transition-opacity"
                           >
-                            ＋ 日付
+                            ＋
                           </button>
                         )}
                       </div>
@@ -254,55 +245,49 @@ export function GanttTable({
                         <td
                           key={month.id}
                           onClick={() => onCellClick(task.id, month.id, task.name, section.name, cell || null)}
-                          className={`border border-slate-300 cursor-pointer hover:opacity-80 ${
-                            isMainEvent
-                              ? 'bg-red-50/30'
-                              : isCurrentMonth
-                              ? 'bg-blue-50/40'
-                              : 'bg-white'
+                          className={`border border-slate-300 h-9 cursor-pointer hover:opacity-80 ${
+                            isMainEvent ? 'bg-red-50/30' : isCurrentMonth ? 'bg-blue-50/40' : 'bg-white'
                           }`}
                         >
-                          <div className="flex items-center justify-center h-full min-h-[48px] p-1">
+                          <div className="flex items-center justify-center h-full">
                             {cell && renderStatusBadge(cell.content)}
                           </div>
                         </td>
                       )
                     })}
                   </tr>
-                )
-              })}
+                ))}
 
-              {/* Add Task Row */}
-              {section.is_open && (
-                <tr>
-                  <td className="sticky left-0 z-10 bg-slate-50 border border-slate-300 px-3 py-2 h-8 min-w-[248px] max-w-[248px]">
-                    <button
-                      onClick={() => onAddTaskToSection(section.id)}
-                      className="text-xs text-blue-600 hover:text-blue-800 underline"
-                    >
-                      ＋ タスク追加
-                    </button>
-                  </td>
-                  {MONTHS.map(month => {
-                    const isCurrentMonth = month.id === CURRENT_MONTH_ID
-                    const isMainEvent = (month as any).isMain
-                    return (
-                      <td
-                        key={month.id}
-                        className={`border border-slate-300 h-8 ${
-                          isMainEvent
-                            ? 'bg-red-50/30'
-                            : isCurrentMonth
-                            ? 'bg-blue-50/40'
-                            : 'bg-slate-50'
-                        }`}
-                      ></td>
-                    )
-                  })}
-                </tr>
-              )}
-            </Fragment>
-          ))}
+                {/* Add Task Row */}
+                {section.is_open && (
+                  <tr>
+                    <td className="sticky left-0 z-10 bg-slate-50 border border-slate-300 min-w-[248px] max-w-[248px]">
+                      <div className="flex items-center px-2 h-7">
+                        <button
+                          onClick={() => onAddTaskToSection(section.id)}
+                          className="text-xs text-blue-500 hover:text-blue-700"
+                        >
+                          ＋ タスク追加
+                        </button>
+                      </div>
+                    </td>
+                    {MONTHS.map(month => {
+                      const isCurrentMonth = month.id === CURRENT_MONTH_ID
+                      const isMainEvent = (month as any).isMain
+                      return (
+                        <td
+                          key={month.id}
+                          className={`border border-slate-300 h-7 ${
+                            isMainEvent ? 'bg-red-50/30' : isCurrentMonth ? 'bg-blue-50/40' : 'bg-slate-50'
+                          }`}
+                        />
+                      )
+                    })}
+                  </tr>
+                )}
+              </Fragment>
+            )
+          })}
         </tbody>
       </table>
     </div>
