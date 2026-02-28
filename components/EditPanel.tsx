@@ -112,10 +112,9 @@ export function EditPanel({ taskId, monthId, taskName, secName, cell, onClose, o
       <div
         className="fixed inset-0 z-40"
         style={{
-          background: 'rgba(0,0,0,0.38)',
-          backdropFilter: 'blur(2px)',
-          opacity: visible ? 1 : 0,
-          transition: 'opacity 0.3s',
+          background: visible ? 'rgba(0,0,0,0.38)' : 'rgba(0,0,0,0)',
+          backdropFilter: visible ? 'blur(2px)' : 'blur(0px)',
+          transition: 'background 0.3s, backdrop-filter 0.3s',
           pointerEvents: visible ? 'auto' : 'none',
         } as React.CSSProperties}
         onClick={() => doClose()}
