@@ -369,8 +369,9 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
       {/* ── Toast ── */}
       {toastMsg && (
         <div
-          className="fixed bottom-6 left-1/2 px-5 py-2 rounded-full text-[13px] font-semibold text-white z-[200] pointer-events-none"
+          className="fixed left-1/2 px-5 py-2 rounded-full text-[13px] font-semibold text-white z-[200] pointer-events-none"
           style={{
+            bottom: '24px',
             background: '#0F172A',
             transform: `translateX(-50%) translateY(${toastVisible ? '0' : '12px'})`,
             opacity: toastVisible ? 1 : 0,
