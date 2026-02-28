@@ -27,10 +27,10 @@ export function EditPanel({ taskId, monthId, taskName, secName, cell, onClose, o
 
   const monthLabel = MONTHS.find(m => m.id === monthId)?.label || ''
 
-  // Enter animation
+  // Enter animation — use setTimeout to ensure initial state is painted
   useEffect(() => {
-    const id = requestAnimationFrame(() => setVisible(true))
-    return () => cancelAnimationFrame(id)
+    const id = setTimeout(() => setVisible(true), 20)
+    return () => clearTimeout(id)
   }, [])
 
   // Escape key to close
