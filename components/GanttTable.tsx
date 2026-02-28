@@ -60,20 +60,18 @@ export function GanttTable({
     setEditingSectionId(null)
   }
 
-  /** ステータスに応じたセルの背景・文字スタイル */
-  const getCellStyle = (content: string | null, isCurrentMonth: boolean, isMainEvent: boolean) => {
-    if (content === '済') return { bg: 'bg-emerald-500 hover:bg-emerald-600', text: 'text-white font-bold', label: '✓ 済' }
-    if (content === '予定') return { bg: 'bg-amber-400 hover:bg-amber-500', text: 'text-white font-semibold', label: '予定' }
-    if (content) return { bg: 'bg-sky-400 hover:bg-sky-500', text: 'text-white font-semibold', label: content }
-    if (isMainEvent) return { bg: 'bg-red-50 hover:bg-red-100', text: '', label: '' }
-    if (isCurrentMonth) return { bg: 'bg-blue-50 hover:bg-blue-100', text: '', label: '' }
-    return { bg: 'bg-white hover:bg-slate-50', text: '', label: '' }
+  /** ステータスに応じたセルの色情報 */
+  const CELL_COLORS = {
+    done:    { bg: '#10b981', hover: '#059669', text: 'white', label: '✓ 済' },
+    planned: { bg: '#f59e0b', hover: '#d97706', text: 'white', label: '予定' },
+    other:   { bg: '#38bdf8', hover: '#0ea5e9', text: 'white', label: '' },
   }
 
   return (
     <div className="custom-scroll overflow-auto h-[calc(100vh-94px)]">
       <table className="border-collapse w-full">
         <thead>
+          {/* 月ヘッダー */}
           <tr>
             <th className="sticky left-0 top-0 z-20 bg-[#0D2137] text-white w-[220px] min-w-[220px] max-w-[220px] border border-slate-700 h-9" />
             {MONTHS.map(month => {
@@ -95,6 +93,8 @@ export function GanttTable({
               )
             })}
           </tr>
+
+          {/* マイルストーン帯 */}
           <tr>
             <th className="sticky left-0 top-9 z-20 bg-[#142030] border border-slate-700 h-6" />
             {MONTHS.map(month => {
@@ -119,14 +119,17 @@ export function GanttTable({
             })}
           </tr>
         </thead>
+
         <tbody>
           {sections.map(section => {
             const completedCount = section.tasks.filter(t => t.cells.some(c => c.content === '済')).length
             const totalCount = section.tasks.length
             const pct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0
             const sectionColor = section.color || '#94a3b8'
+
             return (
               <Fragment key={section.id}>
+                {/* セクションヘッダー行 */}
                 <tr>
                   <td className="sticky left-0 z-10 bg-slate-200 border border-slate-300 min-w-[220px] max-w-[220px]">
                     <div
@@ -180,8 +183,11 @@ export function GanttTable({
                     )
                   })}
                 </tr>
+
+                {/* タスク行 */}
                 {section.is_open && section.tasks.map(task => (
                   <tr key={task.id} className="group/row">
+                    {/* タスク名列 */}
                     <td
                       className="sticky left-0 z-10 bg-white border border-slate-200 min-w-[220px] max-w-[220px] group-hover/row:bg-slate-50"
                       style={{ borderLeft: `3px solid ${sectionColor}40` }}
@@ -225,20 +231,34 @@ export function GanttTable({
                         )}
                       </div>
                     </td>
+
+                    {/* ガントセル */}
                     {MONTHS.map(month => {
                       const cell = task.cells.find(c => c.month_id === month.id)
                       const isCurrentMonth = month.id === CURRENT_MONTH_ID
                       const isMainEvent = (month as any).isMain
-                      const style = getCellStyle(cell?.content ?? null, isCurrentMonth, isMainEvent)
+                      const content = cell?.content ?? null
+
+                      const color =
+                        content === '済' ? CELL_COLORS.done :
+                        content === '予定' ? CELL_COLORS.planned :
+                        content ? { ...CELL_COLORS.other, label: content } :
+                        null
+
+                      const emptyBg = isMainEvent ? '#fef2f2' : isCurrentMonth ? '#eff6ff' : '#ffffff'
+
                       return (
                         <td
                           key={month.id}
                           onClick={() => onCellClick(task.id, month.id, task.name, section.name, cell || null)}
-                          className={`border border-slate-200 h-9 cursor-pointer transition-colors ${style.bg}`}
+                          className="border border-slate-200 h-9 cursor-pointer transition-colors"
+                          style={{ backgroundColor: color ? color.bg : emptyBg }}
+                          onMouseEnter={e => { (e.currentTarget as HTMLTableCellElement).style.backgroundColor = color ? color.hover : isCurrentMonth ? '#dbeafe' : '#f8fafc' }}
+                          onMouseLeave={e => { (e.currentTarget as HTMLTableCellElement).style.backgroundColor = color ? color.bg : emptyBg }}
                         >
-                          {style.label && (
+                          {color && (
                             <div className="flex items-center justify-center h-full">
-                              <span className={`text-xs leading-none ${style.text}`}>{style.label}</span>
+                              <span className="text-xs font-bold leading-none" style={{ color: color.text }}>{color.label}</span>
                             </div>
                           )}
                         </td>
@@ -246,6 +266,8 @@ export function GanttTable({
                     })}
                   </tr>
                 ))}
+
+                {/* タスク追加行 */}
                 {section.is_open && (
                   <tr>
                     <td
