@@ -152,19 +152,24 @@ export function EditPanel({ taskId, monthId, taskName, secName, cell, onClose, o
           <div>
             <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-2">ステータス</label>
             <div className="flex gap-2">
-              {[
-                { val: '済',   label: '✓ 済',   active: 'bg-emerald-50 text-emerald-700 border-emerald-500' },
-                { val: '予定', label: '● 予定', active: 'bg-amber-50  text-amber-700  border-amber-500' },
-                { val: '',     label: '— 未定', active: 'bg-slate-100 text-slate-700  border-slate-400' },
-              ].map(({ val, label, active }) => (
-                <button
-                  key={val || 'none'}
-                  onClick={() => setStatus(val)}
-                  className={`flex-1 py-2 text-[13px] font-bold rounded-lg border-2 transition-all duration-100 ${
-                    status === val ? active : 'bg-slate-50 text-slate-400 border-slate-200 hover:-translate-y-px hover:border-slate-300'
-                  }`}
-                >{label}</button>
-              ))}
+              {([
+                { val: '済',   label: '✓ 済',   bg: '#ecfdf5', color: '#047857', border: '#10b981' },
+                { val: '予定', label: '● 予定', bg: '#fffbeb', color: '#b45309', border: '#f59e0b' },
+                { val: '',     label: '— 未定', bg: '#f1f5f9', color: '#475569', border: '#94a3b8' },
+              ] as const).map(({ val, label, bg, color, border }) => {
+                const isActive = status === val
+                return (
+                  <button
+                    key={val || 'none'}
+                    onClick={() => setStatus(val)}
+                    className="flex-1 py-2 text-[13px] font-bold rounded-lg border-2 transition-all duration-100"
+                    style={isActive
+                      ? { background: bg, color, borderColor: border }
+                      : { background: '#f8fafc', color: '#94a3b8', borderColor: '#e2e8f0' }
+                    }
+                  >{label}</button>
+                )
+              })}
             </div>
           </div>
 
