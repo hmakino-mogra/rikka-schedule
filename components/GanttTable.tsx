@@ -245,16 +245,35 @@ export function GanttTable({
                         content ? { ...CELL_COLORS.other, label: content } :
                         null
 
-                      const emptyBg = isMainEvent ? '#fef2f2' : isCurrentMonth ? '#eff6ff' : '#ffffff'
+                      // 空セル: クラスベースでグループホバーが効くようにする
+                      const emptyClass = isMainEvent
+                        ? 'bg-[#fef2f2] group-hover/row:bg-[#edf4ff]'
+                        : isCurrentMonth
+                        ? 'bg-[#eff6ff] group-hover/row:bg-[#edf4ff]'
+                        : 'bg-white group-hover/row:bg-[#edf4ff]'
 
                       return (
                         <td
                           key={month.id}
                           onClick={() => onCellClick(task.id, month.id, task.name, section.name, cell || null)}
-                          className="border border-slate-200 h-9 cursor-pointer transition-colors"
-                          style={{ backgroundColor: color ? color.bg : emptyBg }}
-                          onMouseEnter={e => { (e.currentTarget as HTMLTableCellElement).style.backgroundColor = color ? color.hover : isCurrentMonth ? '#dbeafe' : '#f8fafc' }}
-                          onMouseLeave={e => { (e.currentTarget as HTMLTableCellElement).style.backgroundColor = color ? color.bg : emptyBg }}
+                          className={`border border-slate-200 h-9 cursor-pointer ${!color ? emptyClass : ''}`}
+                          style={color ? { backgroundColor: color.bg } : undefined}
+                          onMouseEnter={e => {
+                            const el = e.currentTarget as HTMLTableCellElement
+                            if (color) {
+                              el.style.backgroundColor = color.hover
+                            } else {
+                              el.style.boxShadow = 'inset 0 0 0 2px #2B5A8A'
+                            }
+                          }}
+                          onMouseLeave={e => {
+                            const el = e.currentTarget as HTMLTableCellElement
+                            if (color) {
+                              el.style.backgroundColor = color.bg
+                            } else {
+                              el.style.boxShadow = ''
+                            }
+                          }}
                         >
                           {color && (
                             <div className="flex items-center justify-center h-full">
