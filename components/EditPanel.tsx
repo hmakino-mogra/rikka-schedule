@@ -122,8 +122,9 @@ export function EditPanel({ taskId, monthId, taskName, secName, cell, onClose, o
 
       {/* ── Side Panel ── */}
       <div
-        className="fixed top-0 right-0 w-[410px] h-screen bg-white flex flex-col z-50"
+        className="fixed top-0 w-[410px] h-screen bg-white flex flex-col z-50"
         style={{
+          right: 0,
           transform: visible ? 'translateX(0)' : 'translateX(100%)',
           transition: 'transform 0.3s cubic-bezier(0.4,0,0.2,1)',
           boxShadow: '-8px 0 32px rgba(0,0,0,0.14)',
