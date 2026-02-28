@@ -60,28 +60,14 @@ export function GanttTable({
     setEditingSectionId(null)
   }
 
-  /** セルの中身をカラーブロックで表示 */
-  const renderCellBlock = (content: string | null) => {
-    if (!content) return null
-    if (content === '済') {
-      return (
-        <div className="absolute inset-[3px] rounded flex items-center justify-center bg-emerald-500 shadow-sm">
-          <span className="text-white text-xs font-bold leading-none">✓ 済</span>
-        </div>
-      )
-    }
-    if (content === '予定') {
-      return (
-        <div className="absolute inset-[3px] rounded flex items-center justify-center bg-amber-400 shadow-sm">
-          <span className="text-white text-xs font-semibold leading-none">予定</span>
-        </div>
-      )
-    }
-    return (
-      <div className="absolute inset-[3px] rounded flex items-center justify-center bg-sky-400 shadow-sm">
-        <span className="text-white text-xs font-semibold leading-none">{content}</span>
-      </div>
-    )
+  /** ステータスに応じたセルの背景・文字スタイル */
+  const getCellStyle = (content: string | null, isCurrentMonth: boolean, isMainEvent: boolean) => {
+    if (content === '済') return { bg: 'bg-emerald-500 hover:bg-emerald-600', text: 'text-white font-bold', label: '✓ 済' }
+    if (content === '予定') return { bg: 'bg-amber-400 hover:bg-amber-500', text: 'text-white font-semibold', label: '予定' }
+    if (content) return { bg: 'bg-sky-400 hover:bg-sky-500', text: 'text-white font-semibold', label: content }
+    if (isMainEvent) return { bg: 'bg-red-50 hover:bg-red-100', text: '', label: '' }
+    if (isCurrentMonth) return { bg: 'bg-blue-50 hover:bg-blue-100', text: '', label: '' }
+    return { bg: 'bg-white hover:bg-slate-50', text: '', label: '' }
   }
 
   return (
@@ -120,8 +106,8 @@ export function GanttTable({
                   key={month.id}
                   onClick={e => onMilestoneClick(month.id, e.currentTarget.getBoundingClientRect())}
                   className={`sticky top-9 z-10 border border-slate-700 h-6 text-xs cursor-pointer hover:opacity-80 overflow-hidden text-ellipsis whitespace-nowrap px-1 ${
-                    isMainEvent ? 'bg-red-900/60' : isCurrentMonth ? 'bg-blue-900/50' : 'bg-[#0D2137]/80'
-                  } ${milestone ? 'text-slate-200' : 'text-slate-600'}`}
+                    isMainEvent ? 'bg-red-950' : isCurrentMonth ? 'bg-blue-950' : 'bg-[#0D2137]'
+                  } ${milestone ? 'text-slate-200' : 'text-slate-700'}`}
                 >
                   {milestone && (
                     <span className={milestone.is_main ? 'text-red-300 font-semibold' : 'text-slate-300'}>
@@ -142,11 +128,11 @@ export function GanttTable({
             return (
               <Fragment key={section.id}>
                 <tr>
-                  <td
-                    className="sticky left-0 z-10 border border-slate-300 min-w-[220px] max-w-[220px]"
-                    style={{ background: `color-mix(in srgb, ${sectionColor} 18%, #e2e8f0)` }}
-                  >
-                    <div className="flex items-center gap-1.5 h-8 pr-2" style={{ paddingLeft: '4px', borderLeft: `4px solid ${sectionColor}` }}>
+                  <td className="sticky left-0 z-10 bg-slate-200 border border-slate-300 min-w-[220px] max-w-[220px]">
+                    <div
+                      className="flex items-center gap-1.5 h-8 pr-2"
+                      style={{ paddingLeft: '6px', borderLeft: `4px solid ${sectionColor}` }}
+                    >
                       <button
                         onClick={() => onToggleSection(section.id)}
                         className="text-[10px] text-slate-500 hover:text-slate-800 w-4 shrink-0"
@@ -177,7 +163,7 @@ export function GanttTable({
                         <div className="w-10 h-1.5 bg-slate-300 rounded-full overflow-hidden">
                           <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${pct}%` }} />
                         </div>
-                        <span className="text-[10px] text-slate-500 tabular-nums w-8 text-right">{completedCount}/{totalCount}</span>
+                        <span className="text-[10px] text-slate-500 tabular-nums w-7 text-right">{completedCount}/{totalCount}</span>
                       </div>
                     </div>
                   </td>
@@ -196,8 +182,11 @@ export function GanttTable({
                 </tr>
                 {section.is_open && section.tasks.map(task => (
                   <tr key={task.id} className="group/row">
-                    <td className="sticky left-0 z-10 bg-white border border-slate-200 min-w-[220px] max-w-[220px] group-hover/row:bg-slate-50">
-                      <div className="flex items-center gap-1.5 h-9 pr-2" style={{ paddingLeft: '8px', borderLeft: `4px solid ${sectionColor}30` }}>
+                    <td
+                      className="sticky left-0 z-10 bg-white border border-slate-200 min-w-[220px] max-w-[220px] group-hover/row:bg-slate-50"
+                      style={{ borderLeft: `3px solid ${sectionColor}40` }}
+                    >
+                      <div className="flex items-center gap-1.5 h-9 px-2">
                         {editingTaskId === task.id ? (
                           <input
                             autoFocus
@@ -213,7 +202,7 @@ export function GanttTable({
                         ) : (
                           <span
                             onDoubleClick={() => handleTaskNameDoubleClick(task.id, task.name)}
-                            className="text-xs text-slate-700 flex-1 min-w-0 truncate cursor-pointer leading-tight"
+                            className="text-xs text-slate-700 flex-1 min-w-0 truncate cursor-pointer"
                             title={task.name}
                           >
                             {task.name}
@@ -240,25 +229,18 @@ export function GanttTable({
                       const cell = task.cells.find(c => c.month_id === month.id)
                       const isCurrentMonth = month.id === CURRENT_MONTH_ID
                       const isMainEvent = (month as any).isMain
-                      const isDone = cell?.content === '済'
-                      const isPlanned = cell?.content === '予定'
+                      const style = getCellStyle(cell?.content ?? null, isCurrentMonth, isMainEvent)
                       return (
                         <td
                           key={month.id}
                           onClick={() => onCellClick(task.id, month.id, task.name, section.name, cell || null)}
-                          className={`relative border border-slate-200 h-9 cursor-pointer transition-colors ${
-                            isDone
-                              ? 'bg-emerald-50 hover:bg-emerald-100'
-                              : isPlanned
-                              ? 'bg-amber-50 hover:bg-amber-100'
-                              : isMainEvent
-                              ? 'bg-red-50/40 hover:bg-red-100/40'
-                              : isCurrentMonth
-                              ? 'bg-blue-50/40 hover:bg-blue-100/40'
-                              : 'bg-white hover:bg-slate-50'
-                          }`}
+                          className={`border border-slate-200 h-9 cursor-pointer transition-colors ${style.bg}`}
                         >
-                          {renderCellBlock(cell?.content ?? null)}
+                          {style.label && (
+                            <div className="flex items-center justify-center h-full">
+                              <span className={`text-xs leading-none ${style.text}`}>{style.label}</span>
+                            </div>
+                          )}
                         </td>
                       )
                     })}
@@ -266,7 +248,10 @@ export function GanttTable({
                 ))}
                 {section.is_open && (
                   <tr>
-                    <td className="sticky left-0 z-10 bg-slate-50 border border-slate-200 min-w-[220px] max-w-[220px]" style={{ borderLeft: `4px solid ${sectionColor}20` }}>
+                    <td
+                      className="sticky left-0 z-10 bg-slate-50 border border-slate-200 min-w-[220px] max-w-[220px]"
+                      style={{ borderLeft: `3px solid ${sectionColor}20` }}
+                    >
                       <div className="flex items-center px-3 h-7">
                         <button
                           onClick={() => onAddTaskToSection(section.id)}
@@ -283,7 +268,7 @@ export function GanttTable({
                         <td
                           key={month.id}
                           className={`border border-slate-100 h-7 ${
-                            isMainEvent ? 'bg-red-50/20' : isCurrentMonth ? 'bg-blue-50/20' : 'bg-slate-50'
+                            isMainEvent ? 'bg-red-50' : isCurrentMonth ? 'bg-blue-50' : 'bg-slate-50'
                           }`}
                         />
                       )
