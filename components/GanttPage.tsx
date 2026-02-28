@@ -152,7 +152,8 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
     tasks: sec.tasks.filter(task => {
       const matchesSearch = task.name.toLowerCase().includes(searchQuery.toLowerCase())
       const matchesFilter =
-        currentFilter === 'すべて' ||
+        currentFilter === 'すべて' ? true :
+        currentFilter === '未定'   ? !task.cells.some(c => c.content === '済' || c.content === '予定') :
         task.cells.some(c => c.content === currentFilter)
       return matchesSearch && matchesFilter
     })
@@ -324,7 +325,7 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
               }))
             )
             setEditPanel(null)
-            showToast('削除しました ✓')
+            showToast('削除しました')
           }}
         />
       )}
