@@ -324,6 +324,7 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
               }))
             )
             setEditPanel(null)
+            showToast('削除しました ✓')
           }}
         />
       )}
