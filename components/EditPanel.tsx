@@ -27,13 +27,11 @@ export function EditPanel({ taskId, monthId, taskName, secName, cell, onClose, o
 
   const monthLabel = MONTHS.find(m => m.id === monthId)?.label || ''
 
-  // Enter animation — use setTimeout to ensure initial state is painted
   useEffect(() => {
     const id = setTimeout(() => setVisible(true), 20)
     return () => clearTimeout(id)
   }, [])
 
-  // Escape key to close
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') doClose() }
     document.addEventListener('keydown', handler)
@@ -50,7 +48,6 @@ export function EditPanel({ taskId, monthId, taskName, secName, cell, onClose, o
     if (data) setComments(data)
   }
 
-  /** Exit animation then run callback */
   const doClose = (action?: () => void) => {
     setVisible(false)
     setTimeout(() => (action ? action() : onClose()), 280)
@@ -110,8 +107,9 @@ export function EditPanel({ taskId, monthId, taskName, secName, cell, onClose, o
     <>
       {/* ── Overlay ── */}
       <div
-        className="fixed inset-0 z-[150]"
+        className="fixed inset-0"
         style={{
+          zIndex: 150,
           background: visible ? 'rgba(0,0,0,0.38)' : 'rgba(0,0,0,0)',
           backdropFilter: visible ? 'blur(2px)' : 'blur(0px)',
           transition: 'background 0.3s, backdrop-filter 0.3s',
@@ -122,8 +120,9 @@ export function EditPanel({ taskId, monthId, taskName, secName, cell, onClose, o
 
       {/* ── Side Panel ── */}
       <div
-        className="fixed top-0 w-[410px] h-screen bg-white flex flex-col z-[200]"
+        className="fixed top-0 w-[410px] h-screen bg-white flex flex-col"
         style={{
+          zIndex: 200,
           right: 0,
           transform: visible ? 'translateX(0)' : 'translateX(100%)',
           transition: 'transform 0.3s cubic-bezier(0.4,0,0.2,1)',
