@@ -214,40 +214,46 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
       </div>
 
       {/* Header Row 2 */}
-      <div className="h-10 bg-slate-50 border-b border-slate-200 flex items-center px-6 gap-4">
-        <input
-          type="text"
-          placeholder="検索..."
-          value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
-          className="px-3 py-1.5 text-xs border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-[#C9A84C]"
-        />
-        <div className="flex gap-2">
-          {['すべて', '済', '予定', '未定'].map(filter => (
+      <div style={{ height:38, display:'flex', alignItems:'center', padding:'0 18px', gap:8, background:'rgba(0,0,0,.22)', borderTop:'1px solid rgba(255,255,255,.06)' }}>
+        {/* Search */}
+        <div style={{ position:'relative', flex:1, maxWidth:220 }}>
+          <input
+            type="text"
+            placeholder="タスクを検索…"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            style={{ width:'100%', padding:'5px 10px 5px 28px', border:'1px solid rgba(255,255,255,.12)', borderRadius:6, background:'rgba(255,255,255,.08)', color:'white', fontSize:'.76rem', fontFamily:'inherit', outline:'none' }}
+          />
+          <span style={{ position:'absolute', left:8, top:'50%', transform:'translateY(-50%)', fontSize:'.72rem', pointerEvents:'none' }}>🔍</span>
+        </div>
+        {/* Filter pills */}
+        <div style={{ display:'flex', gap:4 }}>
+          {[
+            { key:'すべて', label:'すべて' },
+            { key:'済',    label:'✓ 済' },
+            { key:'予定',  label:'● 予定' },
+            { key:'未定',  label:'— 未定' },
+          ].map(({ key, label }) => (
             <button
-              key={filter}
-              onClick={() => setCurrentFilter(filter)}
-              className={`px-3 py-1 text-xs font-medium rounded ${
-                currentFilter === filter
-                  ? 'bg-[#0D2137] text-white'
-                  : 'bg-white text-slate-600 border border-slate-300 hover:bg-slate-100'
-              }`}
+              key={key}
+              onClick={() => setCurrentFilter(key)}
+              style={{
+                padding:'3px 10px', borderRadius:12, cursor:'pointer', fontFamily:'inherit',
+                fontSize:'.7rem', fontWeight:600, transition:'all .12s',
+                border: currentFilter === key ? '1px solid rgba(201,168,76,.5)' : '1px solid rgba(255,255,255,.15)',
+                background: currentFilter === key ? 'rgba(201,168,76,.18)' : 'transparent',
+                color: currentFilter === key ? '#E8C96A' : 'rgba(255,255,255,.55)',
+              }}
             >
-              {filter}
+              {label}
             </button>
           ))}
         </div>
-        <div className="flex-1"></div>
-        <div className="flex gap-2 text-xs">
-          <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded">
-            ✓ 済
-          </span>
-          <span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-700 rounded">
-            ● 予定
-          </span>
-          <span className="inline-flex items-center gap-1 px-2 py-1 bg-slate-100 text-slate-700 rounded">
-            未定
-          </span>
+        {/* Legend */}
+        <div style={{ display:'flex', gap:6, marginLeft:'auto' }}>
+          <span style={{ padding:'2px 7px', borderRadius:10, fontSize:'.62rem', fontWeight:700, background:'#D1FAE5', color:'#059669' }}>✓ 済</span>
+          <span style={{ padding:'2px 7px', borderRadius:10, fontSize:'.62rem', fontWeight:700, background:'#FEF3C7', color:'#D97706' }}>● 予定</span>
+          <span style={{ padding:'2px 7px', borderRadius:10, fontSize:'.62rem', fontWeight:700, background:'#DBEAFE', color:'#2563EB' }}>日 日付入り</span>
         </div>
       </div>
 

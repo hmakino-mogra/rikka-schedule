@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { SectionWithTasks, TaskWithCells, TaskCell, Milestone, MONTHS, CURRENT_MONTH_ID, fmtDate } from '@/lib/database.types'
+import { SectionWithTasks, TaskCell, Milestone, MONTHS, CURRENT_MONTH_ID, fmtDate } from '@/lib/database.types'
 
 interface Props {
   sections: SectionWithTasks[]
@@ -39,87 +39,77 @@ export function GanttTable({
     setEditingTaskId(taskId)
     setEditingTaskName(currentName)
   }
-
   const handleTaskNameSave = async (taskId: string) => {
-    if (editingTaskName.trim()) {
-      await onTaskNameEdit(taskId, editingTaskName.trim())
-    }
+    if (editingTaskName.trim()) await onTaskNameEdit(taskId, editingTaskName.trim())
     setEditingTaskId(null)
   }
-
   const handleSectionNameDoubleClick = (sectionId: string, currentName: string) => {
     setEditingSectionId(sectionId)
     setEditingSectionName(currentName)
   }
-
   const handleSectionNameSave = async (sectionId: string) => {
-    if (editingSectionName.trim()) {
-      await onSectionNameEdit(sectionId, editingSectionName.trim())
-    }
+    if (editingSectionName.trim()) await onSectionNameEdit(sectionId, editingSectionName.trim())
     setEditingSectionId(null)
   }
 
   const renderStatusBadge = (content: string | null) => {
     if (!content) return null
-    if (content === '済') {
-      return <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded">✓ 済</span>
-    }
-    if (content === '予定') {
-      return <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-medium rounded">● 予定</span>
-    }
-    return <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded">{content}</span>
+    if (content === '済')
+      return <span style={{ display:'inline-flex', alignItems:'center', gap:3, padding:'3px 8px', borderRadius:11, fontSize:'.67rem', fontWeight:700, lineHeight:1, background:'#D1FAE5', color:'#059669' }}>✓ 済</span>
+    if (content === '予定')
+      return <span style={{ display:'inline-flex', alignItems:'center', gap:3, padding:'3px 8px', borderRadius:11, fontSize:'.67rem', fontWeight:700, lineHeight:1, background:'#FEF3C7', color:'#D97706' }}>● 予定</span>
+    return <span style={{ display:'inline-flex', alignItems:'center', gap:3, padding:'3px 8px', borderRadius:11, fontSize:'.67rem', fontWeight:700, lineHeight:1, background:'#DBEAFE', color:'#2563EB' }}>{content}</span>
   }
 
   return (
-    <div className="custom-scroll overflow-auto h-[calc(100vh-94px)]" style={{ position: 'relative', zIndex: 0 }}>
-      <table className="border-collapse w-full">
+    <div style={{ height:'calc(100vh - 94px)', overflow:'auto', position:'relative', zIndex:0 }}
+      className="custom-scroll">
+      <table style={{ borderCollapse:'collapse', width:'max-content', minWidth:'100%' }}>
         <thead>
-          {/* Month headers */}
+          {/* ── Month header row ── */}
           <tr>
-            <th className="sticky left-0 top-0 z-20 bg-[#0D2137] text-white w-[248px] min-w-[248px] max-w-[248px] border border-slate-300 h-8"></th>
+            <th style={{ position:'sticky', left:0, top:0, zIndex:40, background:'#091929', color:'rgba(255,255,255,.3)', fontSize:'.65rem', fontWeight:400, textAlign:'left', padding:'0 14px', minWidth:248, maxWidth:248, height:42, borderRight:'1px solid rgba(255,255,255,.07)' }}>
+              タスク
+            </th>
             {MONTHS.map(month => {
               const isCurrentMonth = month.id === CURRENT_MONTH_ID
               const isMainEvent = (month as any).isMain
               return (
-                <th
-                  key={month.id}
-                  className={`sticky top-0 z-10 border border-slate-300 h-8 text-center text-xs font-semibold w-20 min-w-[80px] ${
-                    isMainEvent
-                      ? 'bg-red-900 text-white'
-                      : isCurrentMonth
-                      ? 'bg-blue-800 text-white'
-                      : 'bg-[#0D2137] text-white'
-                  }`}
-                >
-                  {month.label}
+                <th key={month.id} style={{
+                  position:'sticky', top:0, zIndex:30,
+                  background: isMainEvent ? '#7f1d1d' : isCurrentMonth ? '#1e3a8a' : '#091929',
+                  color: isMainEvent ? '#fca5a5' : isCurrentMonth ? '#93c5fd' : 'rgba(255,255,255,.7)',
+                  fontSize:'.75rem', fontWeight:600, textAlign:'center',
+                  height:42, borderLeft:'1px solid rgba(255,255,255,.05)',
+                  minWidth:86, whiteSpace:'nowrap', verticalAlign:'middle'
+                }}>
+                  <div>{month.label}</div>
+                  {isCurrentMonth && <div style={{ fontSize:'.56rem', color:'#60a5fa', marginTop:1 }}>◀ 今月</div>}
+                  {isMainEvent && <div style={{ fontSize:'.56rem', marginTop:1 }}>🎉 本番</div>}
                 </th>
               )
             })}
           </tr>
 
-          {/* Milestone strip */}
+          {/* ── Milestone strip ── */}
           <tr>
-            <th className="sticky left-0 top-8 z-20 bg-slate-100 border border-slate-300 h-6"></th>
+            <td style={{ position:'sticky', left:0, top:42, zIndex:20, background:'#0a1a2b', color:'#E8C96A', fontSize:'.65rem', fontWeight:700, letterSpacing:'.05em', padding:'0 14px', borderRight:'1px solid rgba(255,255,255,.07)', height:52, verticalAlign:'middle', whiteSpace:'nowrap' }}>
+              主なイベント ✏️
+            </td>
             {MONTHS.map(month => {
               const milestone = milestones.find(m => m.month_id === month.id)
-              const isCurrentMonth = month.id === CURRENT_MONTH_ID
-              const isMainEvent = (month as any).isMain
               return (
-                <td
-                  key={month.id}
-                  onClick={e => onMilestoneClick(month.id, e.currentTarget.getBoundingClientRect())}
-                  className={`sticky top-8 z-10 border border-slate-300 h-6 text-xs cursor-pointer hover:opacity-80 overflow-hidden text-ellipsis whitespace-nowrap px-1 ${
-                    isMainEvent
-                      ? 'bg-red-50/30'
-                      : isCurrentMonth
-                      ? 'bg-blue-50/40'
-                      : 'bg-white'
-                  } ${milestone ? 'text-slate-700 font-medium' : 'text-slate-400'}`}
+                <td key={month.id}
+                  onClick={e => onMilestoneClick(month.id, (e.currentTarget as HTMLElement).getBoundingClientRect())}
+                  style={{ position:'sticky', top:42, zIndex:10, background:'#0c1f33', height:52, verticalAlign:'middle', textAlign:'center', borderBottom:'2px solid rgba(201,168,76,.18)', borderLeft:'1px solid rgba(255,255,255,.04)', cursor:'pointer', transition:'background .12s' }}
                 >
-                  {milestone && (
-                    <span className={milestone.is_main ? 'text-red-700 font-semibold' : 'text-slate-700'}>
-                      {milestone.text}
-                    </span>
+                  {milestone ? (
+                    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:3, padding:3 }}>
+                      <div style={{ width:8, height:8, background: milestone.is_main ? '#f87171' : '#C9A84C', transform:'rotate(45deg)', borderRadius:1, flexShrink:0 }}></div>
+                      <div style={{ fontSize:'.59rem', color: milestone.is_main ? '#fca5a5' : 'rgba(232,201,106,.85)', lineHeight:1.25, whiteSpace:'pre-line', textAlign:'center' }}>{milestone.text}</div>
+                    </div>
+                  ) : (
+                    <div style={{ fontSize:'.6rem', color:'rgba(255,255,255,.2)' }}>＋</div>
                   )}
                 </td>
               )
@@ -127,89 +117,77 @@ export function GanttTable({
           </tr>
         </thead>
 
-        {sections.map((section, secIdx) => (
+        {sections.map(section => {
+          const doneCnt = section.tasks.filter(t => t.cells.some(c => c.content === '済')).length
+          const totalCnt = section.tasks.length
+          const pct = totalCnt > 0 ? Math.round(doneCnt / totalCnt * 100) : 0
+          const isSub = section.is_sub
+          const secBg = isSub ? '#f0ebff' : '#e4eaf5'
+          const secBorder = isSub ? '1px solid #e9d5ff' : '2px solid #E2E8F0'
+
+          return (
             <tbody key={section.id}>
-              {/* Section Header */}
+              {/* ── Section Header ── */}
               <tr>
-                <td className="sticky left-0 z-10 bg-slate-200 border border-slate-300 px-3 py-2 h-8 flex items-center gap-2 min-w-[248px] max-w-[248px]">
-                  <button
-                    onClick={() => onToggleSection(section.id)}
-                    className="text-xs font-bold text-slate-600 hover:text-slate-800"
-                  >
-                    {section.is_open ? '▼' : '▶'}
-                  </button>
-                  <span
-                    className={`w-2 h-2 rounded-full flex-shrink-0`}
-                    style={{ backgroundColor: section.color || '#94a3b8' }}
-                  ></span>
-                  <span
-                    onDoubleClick={() => handleSectionNameDoubleClick(section.id, section.name)}
-                    className="font-semibold text-sm text-slate-700 flex-1 cursor-pointer hover:text-slate-900"
-                  >
+                <td style={{ position:'sticky', left:0, zIndex:8, background: secBg, borderTop: secBorder, borderBottom:'1px solid #E2E8F0', height:32, minWidth:248, maxWidth:248, padding:0 }}>
+                  <div style={{ display:'flex', alignItems:'center', height:'100%', gap:7, padding:'0 10px 0 14px' }}>
+                    <div style={{ width:7, height:7, borderRadius:'50%', flexShrink:0, background: section.color || '#94a3b8' }}></div>
                     {editingSectionId === section.id ? (
                       <input
                         autoFocus
                         value={editingSectionName}
                         onChange={e => setEditingSectionName(e.target.value)}
                         onBlur={() => handleSectionNameSave(section.id)}
-                        onKeyDown={e => {
-                          if (e.key === 'Enter') handleSectionNameSave(section.id)
-                          if (e.key === 'Escape') setEditingSectionId(null)
-                        }}
-                        className="text-sm font-semibold border border-slate-300 rounded px-1 py-0 w-full"
+                        onKeyDown={e => { if (e.key === 'Enter') handleSectionNameSave(section.id); if (e.key === 'Escape') setEditingSectionId(null) }}
+                        style={{ fontSize:'.7rem', fontWeight:700, border:'none', background:'white', borderRadius:3, padding:'2px 4px', outline:'2px solid #2B5A8A', fontFamily:'inherit', width:160 }}
                       />
                     ) : (
-                      section.name
+                      <span
+                        onDoubleClick={() => handleSectionNameDoubleClick(section.id, section.name)}
+                        style={{ fontSize:'.7rem', fontWeight:700, color:'#334155', cursor:'pointer', padding:'2px 4px', borderRadius:3 }}
+                      >
+                        {section.name}
+                      </span>
                     )}
-                  </span>
-                  <span className="text-xs text-slate-600">{section.tasks.length}</span>
-                  <div className="flex-1 max-w-[60px]">
-                    <div className="bg-slate-300 rounded-full h-1 overflow-hidden">
-                      <div
-                        className="bg-green-600 h-full"
-                        style={{
-                          width: section.tasks.length > 0
-                            ? `${(section.tasks.filter(t => t.cells.some(c => c.content === '済')).length / section.tasks.length) * 100}%`
-                            : '0%'
-                        }}
-                      ></div>
+                    <span style={{ fontSize:'.63rem', color:'#64748B', background:'#E2E8F0', borderRadius:10, padding:'1px 6px', whiteSpace:'nowrap' }}>{totalCnt}タスク</span>
+                    <div style={{ flex:1, margin:'0 8px' }}>
+                      <div style={{ height:4, background:'#E2E8F0', borderRadius:2, overflow:'hidden' }}>
+                        <div style={{ height:'100%', borderRadius:2, transition:'width .4s', background: section.color || '#3B82F6', width:`${pct}%` }}></div>
+                      </div>
+                      <div style={{ fontSize:'.6rem', color:'#64748B', marginTop:1 }}>済 {doneCnt}/{totalCnt} ({pct}%)</div>
                     </div>
+                    <button
+                      onClick={() => onToggleSection(section.id)}
+                      style={{ fontSize:'.68rem', color:'#64748B', background:'none', border:'none', cursor:'pointer', padding:'3px 7px', borderRadius:4, fontFamily:'inherit', whiteSpace:'nowrap', flexShrink:0 }}
+                    >
+                      {section.is_open ? '▼ 折りたたむ' : '▶ 展開'}
+                    </button>
                   </div>
-                  <span className="text-xs text-slate-600 ml-1">
-                    {section.tasks.filter(t => t.cells.some(c => c.content === '済')).length}/{section.tasks.length}
-                  </span>
                 </td>
                 {MONTHS.map(month => {
                   const isCurrentMonth = month.id === CURRENT_MONTH_ID
                   const isMainEvent = (month as any).isMain
                   return (
-                    <td
-                      key={month.id}
-                      className={`border border-slate-300 h-8 ${
-                        isMainEvent
-                          ? 'bg-red-50/30'
-                          : isCurrentMonth
-                          ? 'bg-blue-50/40'
-                          : 'bg-white'
-                      }`}
-                    ></td>
+                    <td key={month.id} style={{
+                      height:32,
+                      background: isMainEvent ? 'rgba(220,38,38,.04)' : isCurrentMonth ? 'rgba(37,99,235,.04)' : secBg,
+                      borderTop: secBorder, borderBottom:'1px solid #E2E8F0', borderLeft:'1px solid #CBD5E1'
+                    }}></td>
                   )
                 })}
               </tr>
 
-              {/* Task Rows */}
-              {section.is_open && section.tasks.map(task => {
-                const taskCell = task.cells.find(c => {
-                  const month = MONTHS.find(m => m.id === CURRENT_MONTH_ID)
-                  return c.month_id === CURRENT_MONTH_ID
-                })
-                return (
-                  <tr key={task.id} className="hover:bg-slate-50">
-                    <td className="sticky left-0 z-10 bg-white border border-slate-300 px-3 py-2 min-w-[248px] max-w-[248px]">
-                      <div className="flex flex-col gap-2">
+              {/* ── Task Rows ── */}
+              {section.is_open && section.tasks.map(task => (
+                <tr key={task.id}>
+                  <td style={{ position:'sticky', left:0, zIndex:7, background:'white', borderBottom:'1px solid #E2E8F0', minWidth:248, maxWidth:248, borderRight:'1px solid #E2E8F0', padding:0, height:36 }}>
+                    <div style={{ display:'flex', alignItems:'stretch', height:'100%' }}>
+                      <div style={{ width:3, flexShrink:0, background: section.color || '#94a3b8' }}></div>
+                      <div style={{ flex:1, padding:'0 8px', display:'flex', flexDirection:'column', justifyContent:'center', minWidth:0 }}>
                         <span
                           onDoubleClick={() => handleTaskNameDoubleClick(task.id, task.name)}
-                          className="text-sm text-slate-700 cursor-pointer hover:text-slate-900 font-medium"
+                          style={{ fontSize:'.78rem', color:'#334155', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', cursor:'text' }}
+                          title={task.name}
                         >
                           {editingTaskId === task.id ? (
                             <input
@@ -217,91 +195,81 @@ export function GanttTable({
                               value={editingTaskName}
                               onChange={e => setEditingTaskName(e.target.value)}
                               onBlur={() => handleTaskNameSave(task.id)}
-                              onKeyDown={e => {
-                                if (e.key === 'Enter') handleTaskNameSave(task.id)
-                                if (e.key === 'Escape') setEditingTaskId(null)
-                              }}
-                              className="text-sm font-medium border border-slate-300 rounded px-1 py-0 w-full"
+                              onKeyDown={e => { if (e.key === 'Enter') handleTaskNameSave(task.id); if (e.key === 'Escape') setEditingTaskId(null) }}
+                              style={{ fontSize:'.78rem', color:'#334155', border:'none', background:'white', outline:'2px solid #2B5A8A', borderRadius:3, width:'100%', padding:'1px 3px', fontFamily:'inherit' }}
                             />
-                          ) : (
-                            task.name
-                          )}
+                          ) : task.name}
                         </span>
-                        {task.due_date ? (
-                          <button
-                            onClick={e => onDateChipClick(task.id, task.due_date, e.currentTarget.getBoundingClientRect())}
-                            className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 border border-amber-200 text-amber-700 text-xs rounded hover:bg-amber-100 w-fit"
-                          >
-                            📅 {fmtDate(task.due_date)}
-                          </button>
-                        ) : (
-                          <button
-                            onClick={e => onDateChipClick(task.id, null, e.currentTarget.getBoundingClientRect())}
-                            className="text-xs text-blue-600 hover:text-blue-800 underline w-fit"
-                          >
-                            ＋ 日付
-                          </button>
-                        )}
+                        <div style={{ display:'flex', alignItems:'center', gap:5, marginTop:2 }}>
+                          {task.due_date ? (
+                            <button
+                              onClick={e => onDateChipClick(task.id, task.due_date, (e.currentTarget as HTMLElement).getBoundingClientRect())}
+                              style={{ display:'inline-flex', alignItems:'center', gap:3, background:'#f0f9ff', border:'1px solid #bae6fd', borderRadius:5, padding:'1px 6px', fontSize:'.63rem', color:'#0369a1', cursor:'pointer', whiteSpace:'nowrap' }}
+                            >
+                              📅 {fmtDate(task.due_date)}
+                            </button>
+                          ) : (
+                            <button
+                              onClick={e => onDateChipClick(task.id, null, (e.currentTarget as HTMLElement).getBoundingClientRect())}
+                              style={{ display:'inline-flex', alignItems:'center', gap:2, fontSize:'.62rem', color:'#94A3B8', cursor:'pointer', padding:'1px 4px', borderRadius:4, background:'none', border:'none', fontFamily:'inherit' }}
+                            >
+                              ＋ 日付
+                            </button>
+                          )}
+                        </div>
                       </div>
-                    </td>
+                    </div>
+                  </td>
 
-                    {MONTHS.map(month => {
-                      const cell = task.cells.find(c => c.month_id === month.id)
-                      const isCurrentMonth = month.id === CURRENT_MONTH_ID
-                      const isMainEvent = (month as any).isMain
-                      return (
-                        <td
-                          key={month.id}
-                          onClick={() => onCellClick(task.id, month.id, task.name, section.name, cell || null)}
-                          className={`border border-slate-300 h-12 cursor-pointer hover:opacity-80 text-center align-middle ${
-                            isMainEvent
-                              ? 'bg-red-50/30'
-                              : isCurrentMonth
-                              ? 'bg-blue-50/40'
-                              : 'bg-white'
-                          }`}
-                        >
-                          <div className="flex items-center justify-center h-full">
-                          {cell && renderStatusBadge(cell.content)}
-                          </div>
-                        </td>
-                      )
-                    })}
-                  </tr>
-                )
-              })}
+                  {MONTHS.map(month => {
+                    const cell = task.cells.find(c => c.month_id === month.id)
+                    const isCurrentMonth = month.id === CURRENT_MONTH_ID
+                    const isMainEvent = (month as any).isMain
+                    return (
+                      <td key={month.id}
+                        onClick={() => onCellClick(task.id, month.id, task.name, section.name, cell || null)}
+                        style={{
+                          height:36, borderBottom:'1px solid #E2E8F0',
+                          textAlign:'center', cursor:'pointer', verticalAlign:'middle',
+                          minWidth:86, position:'relative',
+                          background: isMainEvent ? 'rgba(220,38,38,.04)' : isCurrentMonth ? 'rgba(37,99,235,.04)' : 'white',
+                          borderLeft:'1px solid #CBD5E1'
+                        }}
+                      >
+                        {cell && renderStatusBadge(cell.content)}
+                      </td>
+                    )
+                  })}
+                </tr>
+              ))}
 
-              {/* Add Task Row */}
+              {/* ── Add Task Row ── */}
               {section.is_open && (
                 <tr>
-                  <td className="sticky left-0 z-10 bg-slate-50 border border-slate-300 px-3 py-2 h-8 min-w-[248px] max-w-[248px]">
+                  <td style={{ position:'sticky', left:0, zIndex:7, background:'white', borderBottom:'1px solid #E2E8F0', height:26, minWidth:248, maxWidth:248, padding:0 }}>
                     <button
                       onClick={() => onAddTaskToSection(section.id)}
-                      className="text-xs text-blue-600 hover:text-blue-800 underline"
+                      style={{ display:'flex', alignItems:'center', gap:4, height:'100%', width:'100%', padding:'0 0 0 18px', background:'none', border:'none', cursor:'pointer', color:'#94A3B8', fontSize:'.7rem', fontFamily:'inherit' }}
                     >
-                      ＋ タスク追加
+                      <span style={{ fontSize:'.95rem', lineHeight:1 }}>＋</span> タスクを追加
                     </button>
                   </td>
                   {MONTHS.map(month => {
                     const isCurrentMonth = month.id === CURRENT_MONTH_ID
                     const isMainEvent = (month as any).isMain
                     return (
-                      <td
-                        key={month.id}
-                        className={`border border-slate-300 h-8 ${
-                          isMainEvent
-                            ? 'bg-red-50/30'
-                            : isCurrentMonth
-                            ? 'bg-blue-50/40'
-                            : 'bg-white'
-                        }`}
-                      ></td>
+                      <td key={month.id} style={{
+                        height:26, borderBottom:'1px solid #E2E8F0',
+                        background: isMainEvent ? 'rgba(220,38,38,.04)' : isCurrentMonth ? 'rgba(37,99,235,.04)' : 'white',
+                        borderLeft:'1px solid #CBD5E1'
+                      }}></td>
                     )
                   })}
                 </tr>
               )}
             </tbody>
-          ))}
+          )
+        })}
       </table>
     </div>
   )
