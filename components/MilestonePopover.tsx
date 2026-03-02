@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Milestone } from '@/lib/database.types'
 
@@ -56,16 +56,12 @@ export function MilestonePopover({ monthId, milestone, anchor, onClose, onSaved,
     <>
       <div
         className="fixed"
-        style={{ zIndex: 140, top: 0, right: 0, bottom: 0, left: 0 }}
+        style={{ top: 0, right: 0, bottom: 0, left: 0, zIndex: 150 }}
         onClick={onClose}
       />
       <div
         className="fixed bg-white rounded-lg shadow-lg border border-slate-200 w-80 p-4 space-y-3"
-        style={{
-          zIndex: 150,
-          top: `${top}px`,
-          left: `${left}px`
-        }}
+        style={{ zIndex: 200, top: `${top}px`, left: `${left}px` }}
       >
         {/* Header */}
         <div className="flex items-center justify-between pb-2 border-b border-slate-200">

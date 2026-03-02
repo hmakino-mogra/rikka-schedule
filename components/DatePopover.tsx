@@ -48,16 +48,12 @@ export function DatePopover({ taskId, currentDate, anchor, onClose, onSaved }: P
     <>
       <div
         className="fixed"
-        style={{ zIndex: 150, top: 0, right: 0, bottom: 0, left: 0 }}
+        style={{ top: 0, right: 0, bottom: 0, left: 0, zIndex: 150 }}
         onClick={onClose}
       />
       <div
         className="fixed bg-white rounded-lg shadow-lg border border-slate-200 w-72 p-4 space-y-3"
-        style={{
-          zIndex: 200,
-          top: `${top}px`,
-          left: `${left}px`
-        }}
+        style={{ zIndex: 200, top: `${top}px`, left: `${left}px` }}
       >
         {/* Header */}
         <div className="flex items-center justify-between pb-2 border-b border-slate-200">
