@@ -21,6 +21,7 @@ export function DatePopover({ taskId, currentDate, anchor, onClose, onSaved }: P
     try {
       const updateData: Record<string, any> = { due_date: date || null }
       await (supabase.from('tasks') as any).update(updateData).eq('id', taskId)
+
       onSaved(taskId, date || null)
     } finally {
       setLoading(false)
@@ -32,6 +33,7 @@ export function DatePopover({ taskId, currentDate, anchor, onClose, onSaved }: P
     try {
       const updateData: Record<string, any> = { due_date: null }
       await (supabase.from('tasks') as any).update(updateData).eq('id', taskId)
+
       setDate('')
       onSaved(taskId, null)
     } finally {
@@ -45,8 +47,8 @@ export function DatePopover({ taskId, currentDate, anchor, onClose, onSaved }: P
   return (
     <>
       <div
-        className="fixed inset-0"
-        style={{ zIndex: 150 }}
+        className="fixed"
+        style={{ zIndex: 150, top: 0, right: 0, bottom: 0, left: 0 }}
         onClick={onClose}
       />
       <div
@@ -54,13 +56,18 @@ export function DatePopover({ taskId, currentDate, anchor, onClose, onSaved }: P
         style={{
           zIndex: 200,
           top: `${top}px`,
-          left: `${left}px`,
+          left: `${left}px`
         }}
       >
         {/* Header */}
         <div className="flex items-center justify-between pb-2 border-b border-slate-200">
           <h3 className="font-semibold text-slate-700">期限日</h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">✕</button>
+          <button
+            onClick={onClose}
+            className="text-slate-400 hover:text-slate-600"
+          >
+            ✕
+          </button>
         </div>
 
         {/* Date Input */}
@@ -84,16 +91,22 @@ export function DatePopover({ taskId, currentDate, anchor, onClose, onSaved }: P
             onClick={handleSave}
             disabled={loading}
             className="flex-1 px-3 py-1.5 text-xs font-semibold bg-[#C9A84C] text-[#0D2137] rounded hover:opacity-90 disabled:opacity-50"
-          >OK</button>
+          >
+            OK
+          </button>
           <button
             onClick={handleClear}
             disabled={loading}
             className="flex-1 px-3 py-1.5 text-xs font-semibold bg-slate-100 text-slate-700 rounded hover:bg-slate-200 disabled:opacity-50"
-          >クリア</button>
+          >
+            クリア
+          </button>
           <button
             onClick={onClose}
             className="px-3 py-1.5 text-xs font-semibold border border-slate-300 text-slate-600 rounded hover:bg-slate-50"
-          >✕</button>
+          >
+            ✕
+          </button>
         </div>
       </div>
     </>
