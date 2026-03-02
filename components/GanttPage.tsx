@@ -191,7 +191,7 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
   return (
     <div className="w-full h-screen flex flex-col bg-white">
       {/* Header Row 1 */}
-      <div className="h-12 bg-[#0D2137] text-white flex items-center px-6 gap-4 border-b border-slate-300">
+      <div className="h-14 bg-[#0D2137] text-white flex items-center px-6 gap-4 flex-shrink-0" style={{ boxShadow:'0 2px 14px rgba(0,0,0,.35)', position:'relative' }}>
         <span className="text-xl">🌸</span>
         <div className="flex-1">
           <div className="text-sm font-semibold">51期 六華同窓会</div>
@@ -214,7 +214,7 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
       </div>
 
       {/* Header Row 2 */}
-      <div style={{ height:38, display:'flex', alignItems:'center', padding:'0 18px', gap:8, background:'rgba(0,0,0,.22)', borderTop:'1px solid rgba(255,255,255,.06)' }}>
+      <div style={{ height:38, display:'flex', alignItems:'center', padding:'0 18px', gap:8, background:'#0a1828', borderTop:'1px solid rgba(255,255,255,.06)', flexShrink:0 }}>
         {/* Search */}
         <div style={{ position:'relative', flex:1, maxWidth:220 }}>
           <input
