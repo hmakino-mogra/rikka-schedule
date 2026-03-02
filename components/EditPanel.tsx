@@ -110,7 +110,7 @@ export function EditPanel({ taskId, monthId, taskName, secName, cell, onClose, o
     <>
       {/* ── Overlay ── */}
       <div
-        className="fixed inset-0 z-40"
+        className="fixed inset-0 z-[150]"
         style={{
           background: visible ? 'rgba(0,0,0,0.38)' : 'rgba(0,0,0,0)',
           backdropFilter: visible ? 'blur(2px)' : 'blur(0px)',
@@ -122,7 +122,7 @@ export function EditPanel({ taskId, monthId, taskName, secName, cell, onClose, o
 
       {/* ── Side Panel ── */}
       <div
-        className="fixed top-0 w-[410px] h-screen bg-white flex flex-col z-50"
+        className="fixed top-0 w-[410px] h-screen bg-white flex flex-col z-[200]"
         style={{
           right: 0,
           transform: visible ? 'translateX(0)' : 'translateX(100%)',
