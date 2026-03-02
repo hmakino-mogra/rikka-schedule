@@ -46,9 +46,9 @@ export function DatePopover({ taskId, currentDate, anchor, onClose, onSaved }: P
 
   return (
     <>
-      <div className="fixed inset-0 z-40" onClick={onClose}></div>
+      <div className="fixed inset-0 z-[150]" onClick={onClose}></div>
       <div
-        className="fixed bg-white rounded-lg shadow-lg border border-slate-200 w-72 z-50 p-4 space-y-3"
+        className="fixed bg-white rounded-lg shadow-lg border border-slate-200 w-72 z-[200] p-4 space-y-3"
         style={{
           top: `${top}px`,
           left: `${left}px`
