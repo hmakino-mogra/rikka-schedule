@@ -68,7 +68,7 @@ export function GanttTable({
   }
 
   return (
-    <div className="custom-scroll overflow-auto h-[calc(100vh-94px)]">
+    <div className="custom-scroll overflow-auto h-[calc(100vh-94px)]" style={{ position: 'relative', zIndex: 0 }}>
       <table className="border-collapse w-full">
         <thead>
           {/* 月ヘッダー */}
