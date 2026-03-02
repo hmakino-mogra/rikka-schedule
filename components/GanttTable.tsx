@@ -127,8 +127,7 @@ export function GanttTable({
           </tr>
         </thead>
 
-        <tbody>
-          {sections.map((section, secIdx) => (
+        {sections.map((section, secIdx) => (
             <tbody key={section.id}>
               {/* Section Header */}
               <tr>
@@ -254,7 +253,7 @@ export function GanttTable({
                         <td
                           key={month.id}
                           onClick={() => onCellClick(task.id, month.id, task.name, section.name, cell || null)}
-                          className={`border border-slate-300 h-12 cursor-pointer hover:opacity-80 flex items-center justify-center ${
+                          className={`border border-slate-300 h-12 cursor-pointer hover:opacity-80 text-center align-middle ${
                             isMainEvent
                               ? 'bg-red-50/30'
                               : isCurrentMonth
@@ -262,7 +261,9 @@ export function GanttTable({
                               : 'bg-white'
                           }`}
                         >
+                          <div className="flex items-center justify-center h-full">
                           {cell && renderStatusBadge(cell.content)}
+                          </div>
                         </td>
                       )
                     })}
@@ -301,7 +302,6 @@ export function GanttTable({
               )}
             </tbody>
           ))}
-        </tbody>
       </table>
     </div>
   )
