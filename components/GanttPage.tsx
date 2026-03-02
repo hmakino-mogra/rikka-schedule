@@ -48,101 +48,65 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
     setTimeout(() => setToastMsg(null), 2600)
   }
 
-  // Subscribe to realtime changes
   useEffect(() => {
     const channel = supabase
       .channel('schedule-changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'task_cells' },
-        (payload: any) => {
-          setSections(prev =>
-            prev.map(sec => ({
-              ...sec,
-              tasks: sec.tasks.map(task => {
-                if (task.id === payload.new?.task_id || task.id === payload.old?.task_id) {
-                  return {
-                    ...task,
-                    cells: task.cells
-                      .filter(c => c.id !== payload.old?.id)
-                      .concat(payload.new ? [payload.new] : [])
-                      .filter((c, i, arr) => arr.findIndex(x => x.id === c.id) === i)
-                  }
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'task_cells' }, (payload: any) => {
+        setSections(prev =>
+          prev.map(sec => ({
+            ...sec,
+            tasks: sec.tasks.map(task => {
+              if (task.id === payload.new?.task_id || task.id === payload.old?.task_id) {
+                return {
+                  ...task,
+                  cells: task.cells
+                    .filter(c => c.id !== payload.old?.id)
+                    .concat(payload.new ? [payload.new] : [])
+                    .filter((c, i, arr) => arr.findIndex(x => x.id === c.id) === i)
                 }
-                return task
-              })
-            }))
-          )
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'tasks' },
-        (payload: any) => {
-          if (payload.eventType === 'DELETE') {
-            setSections(prev =>
-              prev.map(sec => ({
-                ...sec,
-                tasks: sec.tasks.filter(t => t.id !== payload.old?.id)
-              }))
-            )
-          } else {
-            setSections(prev =>
-              prev.map(sec => {
-                const existing = sec.tasks.find(t => t.id === payload.new?.id)
-                if (existing) {
-                  return {
-                    ...sec,
-                    tasks: sec.tasks.map(t => (t.id === payload.new?.id ? { ...t, ...payload.new } : t))
-                  }
-                }
-                return sec
-              })
-            )
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'milestones' },
-        (payload: any) => {
-          if (payload.eventType === 'DELETE') {
-            setMilestones(prev => prev.filter(m => m.month_id !== payload.old?.month_id))
-          } else {
-            setMilestones(prev => {
-              const exists = prev.find(m => m.month_id === payload.new?.month_id)
-              if (exists) {
-                return prev.map(m => (m.month_id === payload.new?.month_id ? { ...m, ...payload.new } : m))
               }
-              return [...prev, payload.new]
+              return task
             })
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'sections' },
-        (payload: any) => {
+          }))
+        )
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, (payload: any) => {
+        if (payload.eventType === 'DELETE') {
+          setSections(prev => prev.map(sec => ({ ...sec, tasks: sec.tasks.filter(t => t.id !== payload.old?.id) })))
+        } else {
           setSections(prev =>
-            prev.map(sec => (sec.id === payload.new?.id ? { ...sec, ...payload.new } : sec))
+            prev.map(sec => {
+              const existing = sec.tasks.find(t => t.id === payload.new?.id)
+              if (existing) {
+                return { ...sec, tasks: sec.tasks.map(t => (t.id === payload.new?.id ? { ...t, ...payload.new } : t)) }
+              }
+              return sec
+            })
           )
         }
-      )
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'milestones' }, (payload: any) => {
+        if (payload.eventType === 'DELETE') {
+          setMilestones(prev => prev.filter(m => m.month_id !== payload.old?.month_id))
+        } else {
+          setMilestones(prev => {
+            const exists = prev.find(m => m.month_id === payload.new?.month_id)
+            if (exists) return prev.map(m => (m.month_id === payload.new?.month_id ? { ...m, ...payload.new } : m))
+            return [...prev, payload.new]
+          })
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sections' }, (payload: any) => {
+        setSections(prev => prev.map(sec => (sec.id === payload.new?.id ? { ...sec, ...payload.new } : sec)))
+      })
       .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
+    return () => { supabase.removeChannel(channel) }
   }, [])
 
   const daysUntilEvent = Math.ceil((new Date(2026, 9, 17).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
 
   const completedCount = sections.reduce(
-    (total, sec) => total + sec.tasks.reduce((t, task) => {
-      const hasCompleted = task.cells.some(c => c.content === '済')
-      return t + (hasCompleted ? 1 : 0)
-    }, 0),
-    0
+    (total, sec) => total + sec.tasks.reduce((t, task) => t + (task.cells.some(c => c.content === '済') ? 1 : 0), 0), 0
   )
   const totalTasks = sections.reduce((total, sec) => total + sec.tasks.length, 0)
   const percentage = totalTasks > 0 ? Math.round((completedCount / totalTasks) * 100) : 0
@@ -153,15 +117,15 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
       const matchesSearch = task.name.toLowerCase().includes(searchQuery.toLowerCase())
       const matchesFilter =
         currentFilter === 'すべて' ? true :
-        currentFilter === '未定'   ? !task.cells.some(c => c.content === '済' || c.content === '予定') :
+        currentFilter === '未定' ? !task.cells.some(c => c.content === '済' || c.content === '予定') :
         task.cells.some(c => c.content === currentFilter)
       return matchesSearch && matchesFilter
     })
   }))
 
   const handleCellClick = (taskId: string, monthId: number, taskName: string, secName: string, cell: TaskCell | null) => {
-    setDatePopover(null)      // 排他制御: DatePopoverを閉じる
-    setMilestonePopover(null) // 排他制御: MilestonePopoverを閉じる
+    setDatePopover(null)
+    setMilestonePopover(null)
     setEditPanel({ open: true, taskId, monthId, taskName, secName, cell: cell || null })
   }
 
@@ -175,9 +139,7 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
 
   const handleToggleSection = async (sectionId: string) => {
     const sec = sections.find(s => s.id === sectionId)
-    if (sec) {
-      await (supabase.from('sections') as any).update({ is_open: !sec.is_open }).eq('id', sectionId)
-    }
+    if (sec) await (supabase.from('sections') as any).update({ is_open: !sec.is_open }).eq('id', sectionId)
   }
 
   const handleAddTaskToSection = (sectionId: string) => {
@@ -187,14 +149,7 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
 
   const handleTaskAdded = (task: TaskWithCells) => {
     setSections(prev =>
-      prev.map(sec =>
-        sec.id === task.section_id
-          ? {
-              ...sec,
-              tasks: [...sec.tasks, task]
-            }
-          : sec
-      )
+      prev.map(sec => sec.id === task.section_id ? { ...sec, tasks: [...sec.tasks, task] } : sec)
     )
   }
 
@@ -203,10 +158,8 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
       {/* ── Header Row 1 ── */}
       <div className="relative h-14 bg-[#0D2137] text-white flex items-center px-4 gap-3 z-10"
            style={{ boxShadow: '0 2px 14px rgba(0,0,0,0.35)' }}>
-        {/* Gold accent bar */}
         <div className="absolute left-0 top-0 bottom-0 w-1"
              style={{ background: 'linear-gradient(180deg,#E8C96A,#C9A84C)' }} />
-        {/* Logo */}
         <div className="w-8 h-8 rounded-lg flex items-center justify-center text-base flex-shrink-0 ml-1"
              style={{ background: 'linear-gradient(135deg,#E8C96A,#9a7230)' }}>🌸</div>
         <div className="flex-shrink-0">
@@ -214,7 +167,6 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
           <div className="text-[11px] opacity-40 leading-tight">スケジュール管理</div>
         </div>
         <div className="w-px h-5 bg-white/10 flex-shrink-0" />
-        {/* Gold countdown */}
         <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[#E8C96A] text-[12px] flex-shrink-0"
              style={{ background: 'rgba(201,168,76,0.13)', border: '1px solid rgba(201,168,76,0.3)' }}>
           🎉 本番まで <span className="text-[18px] font-bold leading-none">{daysUntilEvent}</span> 日
@@ -239,20 +191,15 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
             type="text" placeholder="タスクを検索…"
             value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
             className="pl-7 pr-3 py-1 text-[12px] rounded-md focus:outline-none"
-            style={{
-              background: 'rgba(255,255,255,0.08)',
-              border: '1px solid rgba(255,255,255,0.12)',
-              color: 'white',
-              width: '200px',
-            }}
+            style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', color: 'white', width: '200px' }}
           />
         </div>
         <div className="flex gap-1">
           {[
             { key: 'すべて', label: 'すべて' },
-            { key: '済',     label: '✓ 済' },
-            { key: '予定',   label: '● 予定' },
-            { key: '未定',   label: '— 未定' },
+            { key: '済', label: '✓ 済' },
+            { key: '予定', label: '● 予定' },
+            { key: '未定', label: '— 未定' },
           ].map(({ key, label }) => (
             <button
               key={key}
@@ -289,7 +236,6 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
         onAddTaskToSection={handleAddTaskToSection}
       />
 
-      {/* Edit Panel */}
       {editPanel?.open && (
         <EditPanel
           taskId={editPanel.taskId}
@@ -304,10 +250,7 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
                 ...sec,
                 tasks: sec.tasks.map(task =>
                   task.id === editPanel.taskId
-                    ? {
-                        ...task,
-                        cells: task.cells.filter(c => c.id !== cell.id).concat(cell)
-                      }
+                    ? { ...task, cells: task.cells.filter(c => c.id !== cell.id).concat(cell) }
                     : task
                 )
               }))
@@ -332,20 +275,15 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
         />
       )}
 
-      {/* Add Task Modal */}
       {addModal && (
         <AddTaskModal
           sections={sections}
           preselectSectionId={addModalSectionId}
-          onClose={() => {
-            setAddModal(false)
-            setAddModalSectionId(undefined)
-          }}
+          onClose={() => { setAddModal(false); setAddModalSectionId(undefined) }}
           onAdded={handleTaskAdded}
         />
       )}
 
-      {/* Milestone Popover */}
       {milestonePopover && (
         <MilestonePopover
           monthId={milestonePopover.monthId}
@@ -355,9 +293,7 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
           onSaved={m => {
             setMilestones(prev => {
               const exists = prev.find(x => x.month_id === m.month_id)
-              return exists
-                ? prev.map(x => (x.month_id === m.month_id ? m : x))
-                : [...prev, m]
+              return exists ? prev.map(x => (x.month_id === m.month_id ? m : x)) : [...prev, m]
             })
             setMilestonePopover(null)
           }}
@@ -371,8 +307,9 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
       {/* ── Toast ── */}
       {toastMsg && (
         <div
-          className="fixed left-1/2 px-5 py-2 rounded-full text-[13px] font-semibold text-white z-[200] pointer-events-none"
+          className="fixed left-1/2 px-5 py-2 rounded-full text-[13px] font-semibold text-white pointer-events-none"
           style={{
+            zIndex: 250,
             bottom: '24px',
             background: '#0F172A',
             transform: `translateX(-50%) translateY(${toastVisible ? '0' : '12px'})`,
@@ -382,7 +319,6 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
         >{toastMsg}</div>
       )}
 
-      {/* Date Popover */}
       {datePopover && (
         <DatePopover
           taskId={datePopover.taskId}
@@ -394,9 +330,7 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
               prev.map(sec => ({
                 ...sec,
                 tasks: sec.tasks.map(task =>
-                  task.id === taskId
-                    ? { ...task, due_date: date }
-                    : task
+                  task.id === taskId ? { ...task, due_date: date } : task
                 )
               }))
             )
