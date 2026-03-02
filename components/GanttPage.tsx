@@ -160,6 +160,8 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
   }))
 
   const handleCellClick = (taskId: string, monthId: number, taskName: string, secName: string, cell: TaskCell | null) => {
+    setDatePopover(null)      // 排他制御: DatePopoverを閉じる
+    setMilestonePopover(null) // 排他制御: MilestonePopoverを閉じる
     setEditPanel({ open: true, taskId, monthId, taskName, secName, cell: cell || null })
   }
 
@@ -279,8 +281,8 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
         currentFilter={currentFilter}
         searchQuery={searchQuery}
         onCellClick={handleCellClick}
-        onMilestoneClick={(monthId, anchor) => setMilestonePopover({ monthId, anchor })}
-        onDateChipClick={(taskId, dueDate, anchor) => setDatePopover({ taskId, currentDate: dueDate, anchor })}
+        onMilestoneClick={(monthId, anchor) => { setEditPanel(null); setDatePopover(null); setMilestonePopover({ monthId, anchor }) }}
+        onDateChipClick={(taskId, dueDate, anchor) => { setEditPanel(null); setMilestonePopover(null); setDatePopover({ taskId, currentDate: dueDate, anchor }) }}
         onTaskNameEdit={handleTaskNameEdit}
         onSectionNameEdit={handleSectionNameEdit}
         onToggleSection={handleToggleSection}
