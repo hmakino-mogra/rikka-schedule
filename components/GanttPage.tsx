@@ -191,23 +191,36 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
   return (
     <div className="w-full h-screen flex flex-col bg-white">
       {/* Header Row 1 */}
-      <div className="h-14 bg-[#0D2137] text-white flex items-center px-6 gap-4 flex-shrink-0" style={{ boxShadow:'0 2px 14px rgba(0,0,0,.35)', position:'relative' }}>
-        <span className="text-xl">🌸</span>
-        <div className="flex-1">
-          <div className="text-sm font-semibold">51期 六華同窓会</div>
-          <div className="text-xs opacity-75">スケジュール管理</div>
+      <div style={{ height:56, background:'#0D2137', color:'white', display:'flex', alignItems:'center', padding:'0 18px', gap:12, flexShrink:0, boxShadow:'0 2px 14px rgba(0,0,0,.35)', position:'relative' }}>
+        {/* Logo: /public/logo.jpg があれば表示、なければ桜絵文字 */}
+        <div style={{ width:32, height:32, borderRadius:8, background:'linear-gradient(135deg,#E8C96A,#9a7230)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, overflow:'hidden' }}>
+          <img
+            src="/logo.jpg"
+            alt="logo"
+            style={{ width:'100%', height:'100%', objectFit:'cover' }}
+            onError={e => { (e.currentTarget as HTMLImageElement).style.display='none'; (e.currentTarget.nextSibling as HTMLElement).style.display='flex' }}
+          />
+          <span style={{ display:'none', width:'100%', height:'100%', alignItems:'center', justifyContent:'center', fontSize:'1rem' }}>🌸</span>
         </div>
-        <div className="border-l border-slate-500 pl-4">
-          <span className="text-xs text-[#C9A84C] font-semibold">あと {daysUntilEvent} 日</span>
+        {/* Title */}
+        <div style={{ display:'flex', flexDirection:'column', gap:1 }}>
+          <div style={{ fontSize:'.9rem', fontWeight:700, color:'#fff', lineHeight:1.2 }}>51期 六華同窓会</div>
+          <div style={{ fontSize:'.63rem', color:'rgba(255,255,255,.42)', lineHeight:1 }}>スケジュール管理 ｜ 執行部</div>
         </div>
-        <div className="flex-1"></div>
-        <span className="text-xs opacity-75">進度: {completedCount}/{totalTasks} ({percentage}%)</span>
+        <div style={{ width:1, height:20, background:'rgba(255,255,255,.12)', flexShrink:0 }}></div>
+        {/* Countdown */}
+        <div style={{ background:'rgba(201,168,76,.13)', border:'1px solid rgba(201,168,76,.3)', borderRadius:7, padding:'5px 11px', color:'#E8C96A', fontSize:'.73rem', whiteSpace:'nowrap', display:'flex', alignItems:'center', gap:5 }}>
+          🎉 本番まで <span style={{ fontSize:'1.05rem', fontWeight:700 }}>{daysUntilEvent}</span> 日
+        </div>
+        <div style={{ flex:1 }}></div>
+        {/* Progress */}
+        <div style={{ fontSize:'.72rem', color:'rgba(255,255,255,.55)', whiteSpace:'nowrap' }}>
+          進捗: <span style={{ color:'#E8C96A', fontWeight:700 }}>{completedCount}/{totalTasks} ({percentage}%)</span>
+        </div>
+        {/* Add button */}
         <button
-          onClick={() => {
-            setAddModalSectionId(undefined)
-            setAddModal(true)
-          }}
-          className="ml-6 px-3 py-1 text-xs font-semibold bg-[#C9A84C] text-[#0D2137] rounded hover:opacity-90"
+          onClick={() => { setAddModalSectionId(undefined); setAddModal(true) }}
+          style={{ display:'flex', alignItems:'center', gap:5, padding:'7px 13px', background:'#C9A84C', color:'#0D2137', border:'none', borderRadius:7, fontSize:'.76rem', fontWeight:700, cursor:'pointer', fontFamily:'inherit', whiteSpace:'nowrap' }}
         >
           ＋ タスク追加
         </button>
