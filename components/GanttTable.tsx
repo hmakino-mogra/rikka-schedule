@@ -374,8 +374,8 @@ export function GanttTable({
                 // 完了タスク判定
                 const isDone = task.cells.some(c => c.content === '済')
 
-                // セクションカラーを薄く行背景に反映（約5%透明度）
-                const sectionTint = section.color ? `${section.color}0D` : '#FAFAFA'
+                // セクションカラーを行背景に反映（約12%透明度）
+                const sectionTint = section.color ? `${section.color}1F` : '#F8FAFC'
 
                 // アラートに応じた色設定
                 const rowBg    = alert === 'overdue' ? 'rgba(239,68,68,.05)'  : alert === 'delayed' ? 'rgba(245,158,11,.05)' : sectionTint
