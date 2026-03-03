@@ -211,20 +211,19 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
     ])
   }
 
-  // ── タスクの上下並び替え ──
-  const handleTaskMove = async (taskId: string, direction: 'up' | 'down') => {
+  // ── タスクのドラッグ並び替え ──
+  const handleTaskReorder = (fromTaskId: string, toTaskId: string, insertBefore: boolean) => {
     setSections(prev => prev.map(sec => {
-      const idx = sec.tasks.findIndex(t => t.id === taskId)
-      if (idx < 0) return sec
-      if (direction === 'up' && idx <= 0) return sec
-      if (direction === 'down' && idx >= sec.tasks.length - 1) return sec
-      const swapIdx = direction === 'up' ? idx - 1 : idx + 1
+      const fromIdx = sec.tasks.findIndex(t => t.id === fromTaskId)
+      const toIdx   = sec.tasks.findIndex(t => t.id === toTaskId)
+      if (fromIdx < 0 || toIdx < 0 || fromIdx === toIdx) return sec
       const newTasks = [...sec.tasks]
-      ;[newTasks[idx], newTasks[swapIdx]] = [newTasks[swapIdx], newTasks[idx]]
-      Promise.all([
-        (supabase.from('tasks') as any).update({ sort_order: swapIdx }).eq('id', sec.tasks[idx].id),
-        (supabase.from('tasks') as any).update({ sort_order: idx }).eq('id', sec.tasks[swapIdx].id),
-      ])
+      const [movedTask] = newTasks.splice(fromIdx, 1)
+      const newToIdx = newTasks.findIndex(t => t.id === toTaskId)
+      newTasks.splice(insertBefore ? newToIdx : newToIdx + 1, 0, movedTask)
+      newTasks.forEach((t, i) => {
+        ;(supabase.from('tasks') as any).update({ sort_order: i }).eq('id', t.id)
+      })
       return { ...sec, tasks: newTasks }
     }))
   }
@@ -383,7 +382,7 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
         onAddTaskToSection={handleAddTaskToSection}
         onSectionDelete={handleSectionDelete}
         onSectionMove={handleSectionMove}
-        onTaskMove={handleTaskMove}
+        onTaskReorder={handleTaskReorder}
       />
 
       {/* Edit Panel */}

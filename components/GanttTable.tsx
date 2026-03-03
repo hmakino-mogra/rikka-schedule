@@ -17,7 +17,7 @@ interface Props {
   onAddTaskToSection: (sectionId: string) => void
   onSectionDelete: (sectionId: string) => void
   onSectionMove: (sectionId: string, direction: 'up' | 'down') => void
-  onTaskMove: (taskId: string, direction: 'up' | 'down') => void
+  onTaskReorder: (fromTaskId: string, toTaskId: string, insertBefore: boolean) => void
 }
 
 // ── 令和日付文字列 (例: "R7.12.19") をパース ──────────────────
@@ -74,7 +74,7 @@ export function GanttTable({
   onAddTaskToSection,
   onSectionDelete,
   onSectionMove,
-  onTaskMove,
+  onTaskReorder,
 }: Props) {
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null)
   const [editingTaskName, setEditingTaskName] = useState('')
@@ -82,6 +82,8 @@ export function GanttTable({
   const [editingSectionName, setEditingSectionName] = useState('')
   const [hoveredTaskId, setHoveredTaskId] = useState<string | null>(null)
   const [hoveredSectionId, setHoveredSectionId] = useState<string | null>(null)
+  const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null)
+  const [dragOverInfo, setDragOverInfo] = useState<{ taskId: string; position: 'before' | 'after' } | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   // ── 今月の列が画面中央に来るよう初回スクロール ──
@@ -368,14 +370,46 @@ export function GanttTable({
                 // ホバー時の行背景
                 const hoverTaskBg = alert === 'overdue' ? 'rgba(239,68,68,.11)' : alert === 'delayed' ? 'rgba(245,158,11,.11)' : '#EFF6FF'
 
+                const isDragOver = dragOverInfo?.taskId === task.id
+                const dropShadow = isDragOver
+                  ? (dragOverInfo?.position === 'before'
+                    ? 'inset 0 2px 0 #3B82F6'
+                    : 'inset 0 -2px 0 #3B82F6')
+                  : undefined
+
                 return (
                   <tr
                     key={task.id}
+                    draggable
                     onMouseEnter={() => setHoveredTaskId(task.id)}
                     onMouseLeave={() => setHoveredTaskId(null)}
+                    onDragStart={e => {
+                      setDraggedTaskId(task.id)
+                      e.dataTransfer.effectAllowed = 'move'
+                      e.dataTransfer.setData('text/plain', task.id)
+                    }}
+                    onDragOver={e => {
+                      e.preventDefault()
+                      if (!draggedTaskId || draggedTaskId === task.id) return
+                      const rect = e.currentTarget.getBoundingClientRect()
+                      const position = e.clientY < rect.top + rect.height / 2 ? 'before' : 'after'
+                      setDragOverInfo({ taskId: task.id, position })
+                    }}
+                    onDragLeave={e => {
+                      if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOverInfo(null)
+                    }}
+                    onDrop={e => {
+                      e.preventDefault()
+                      if (draggedTaskId && draggedTaskId !== task.id && dragOverInfo) {
+                        onTaskReorder(draggedTaskId, task.id, dragOverInfo.position === 'before')
+                      }
+                      setDraggedTaskId(null); setDragOverInfo(null)
+                    }}
+                    onDragEnd={() => { setDraggedTaskId(null); setDragOverInfo(null) }}
+                    style={{ opacity: draggedTaskId === task.id ? 0.35 : 1, transition:'opacity .1s' }}
                   >
                     <td
-                      style={{ position:'sticky', left:0, zIndex:7, background: isHovered ? hoverTaskBg : rowBg, borderBottom:'1px solid #E2E8F0', minWidth:248, maxWidth:248, borderRight:'1px solid #E2E8F0', padding:0, height:40, transition:'background .1s' }}
+                      style={{ position:'sticky', left:0, zIndex:7, background: isHovered ? hoverTaskBg : rowBg, borderBottom:'1px solid #E2E8F0', minWidth:248, maxWidth:248, borderRight:'1px solid #E2E8F0', padding:0, height:40, transition:'background .1s', boxShadow: dropShadow }}
                     >
                       <div style={{ display:'flex', alignItems:'stretch', height:'100%' }}>
                         {/* 左のカラーバー（アラート時は赤/橙） */}
@@ -393,6 +427,11 @@ export function GanttTable({
                             />
                           ) : (
                             <div style={{ display:'flex', alignItems:'center', gap:2, minWidth:0 }}>
+                              {/* ドラッグハンドル */}
+                              <span
+                                title="ドラッグして並べ替え"
+                                style={{ flexShrink:0, fontSize:'.85rem', color: isHovered ? '#94A3B8' : 'transparent', cursor:'grab', lineHeight:1, userSelect:'none', transition:'color .1s' }}
+                              >⠿</span>
                               <span
                                 style={{ fontSize:'.78rem', color:'#334155', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', flex:1 }}
                                 title={task.name}
@@ -401,25 +440,11 @@ export function GanttTable({
                                 {task.name}
                               </span>
                               {isHovered && (
-                                <>
-                                  <button
-                                    onClick={e => { e.stopPropagation(); onTaskMove(task.id, 'up') }}
-                                    disabled={isFirstTask}
-                                    title="上に移動"
-                                    style={{ flexShrink:0, padding:'1px 4px', background:'white', border:'1px solid #CBD5E1', borderRadius:3, cursor: isFirstTask ? 'default' : 'pointer', color: isFirstTask ? '#CBD5E1' : '#64748B', fontSize:'.62rem', fontFamily:'inherit', lineHeight:1 }}
-                                  >↑</button>
-                                  <button
-                                    onClick={e => { e.stopPropagation(); onTaskMove(task.id, 'down') }}
-                                    disabled={isLastTask}
-                                    title="下に移動"
-                                    style={{ flexShrink:0, padding:'1px 4px', background:'white', border:'1px solid #CBD5E1', borderRadius:3, cursor: isLastTask ? 'default' : 'pointer', color: isLastTask ? '#CBD5E1' : '#64748B', fontSize:'.62rem', fontFamily:'inherit', lineHeight:1 }}
-                                  >↓</button>
-                                  <button
-                                    onClick={e => { e.stopPropagation(); handleTaskNameDoubleClick(task.id, task.name) }}
-                                    title="タスク名を編集"
-                                    style={{ flexShrink:0, padding:'1px 4px', background:'white', border:'1px solid #CBD5E1', borderRadius:3, cursor:'pointer', color:'#64748B', fontSize:'.62rem', fontFamily:'inherit', lineHeight:1 }}
-                                  >✏</button>
-                                </>
+                                <button
+                                  onClick={e => { e.stopPropagation(); handleTaskNameDoubleClick(task.id, task.name) }}
+                                  title="タスク名を編集"
+                                  style={{ flexShrink:0, padding:'1px 4px', background:'white', border:'1px solid #CBD5E1', borderRadius:3, cursor:'pointer', color:'#64748B', fontSize:'.62rem', fontFamily:'inherit', lineHeight:1 }}
+                                >✏</button>
                               )}
                             </div>
                           )}
@@ -487,6 +512,7 @@ export function GanttTable({
                             background: isHovered ? monthHoverBg : cellAlertBg,
                             borderLeft:'1px solid #CBD5E1',
                             transition:'background .1s',
+                            boxShadow: dropShadow,
                           }}
                         >
                           {cell && renderCellContent(cell)}
