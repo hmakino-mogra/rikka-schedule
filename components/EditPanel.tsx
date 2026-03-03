@@ -19,11 +19,12 @@ interface Props {
   onTaskDeleted?: (taskId: string) => void
   onSectionChange?: (taskId: string, newSectionId: string) => void
   onLinkedSectionsChanged?: (taskId: string, linkedIds: string[]) => void
+  onDueDateChanged?: (taskId: string, dueDate: string | null) => void
 }
 
 export function EditPanel({
   taskId, monthId, taskName, secName, sectionId,
-  cell, sections, taskLinkedSectionIds, onClose, onSaved, onDeleted, onTaskDeleted, onSectionChange, onLinkedSectionsChanged
+  cell, sections, taskLinkedSectionIds, onClose, onSaved, onDeleted, onTaskDeleted, onSectionChange, onLinkedSectionsChanged, onDueDateChanged
 }: Props) {
   const [status, setStatus] = useState(cell?.content || '')
   const [assignee, setAssignee] = useState(cell?.assignee || '')
@@ -66,7 +67,14 @@ export function EditPanel({
         if (onLinkedSectionsChanged) onLinkedSectionsChanged(taskId, linkedSectionIds)
       }
 
-      // 2. セルデータを保存（onSaved がパネルを閉じる）
+      // 2. 実行日（cellDate）を tasks.due_date に自動反映
+      const newDueDate = cellDate || null
+      await (supabase.from('tasks') as any)
+        .update({ due_date: newDueDate })
+        .eq('id', taskId)
+      if (onDueDateChanged) onDueDateChanged(taskId, newDueDate)
+
+      // 3. セルデータを保存（onSaved がパネルを閉じる）
       const { data } = await (supabase.from('task_cells') as any)
         .upsert(
           { task_id: taskId, month_id: monthId, content: status || null, assignee: assignee || null, cell_date: cellDate || null, memo: memo || null },

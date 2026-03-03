@@ -458,6 +458,16 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
               }))
             )
           }}
+          onDueDateChanged={(taskId, dueDate) => {
+            setSections(prev =>
+              prev.map(sec => ({
+                ...sec,
+                tasks: sec.tasks.map(task =>
+                  task.id === taskId ? { ...task, due_date: dueDate } : task
+                )
+              }))
+            )
+          }}
         />
       )}
 
