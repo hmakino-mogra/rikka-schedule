@@ -12,16 +12,18 @@ interface Props {
   sectionId: string
   cell: TaskCell | null
   sections: SectionWithTasks[]
+  taskLinkedSectionIds?: string[] | null
   onClose: () => void
   onSaved: (cell: TaskCell) => void
   onDeleted: (taskId: string, monthId: number) => void
   onTaskDeleted?: (taskId: string) => void
   onSectionChange?: (taskId: string, newSectionId: string) => void
+  onLinkedSectionsChanged?: (taskId: string, linkedIds: string[]) => void
 }
 
 export function EditPanel({
   taskId, monthId, taskName, secName, sectionId,
-  cell, sections, onClose, onSaved, onDeleted, onTaskDeleted, onSectionChange
+  cell, sections, taskLinkedSectionIds, onClose, onSaved, onDeleted, onTaskDeleted, onSectionChange, onLinkedSectionsChanged
 }: Props) {
   const [status, setStatus] = useState(cell?.content || '')
   const [assignee, setAssignee] = useState(cell?.assignee || '')
@@ -31,6 +33,7 @@ export function EditPanel({
   const [newComment, setNewComment] = useState('')
   const [loading, setLoading] = useState(false)
   const [selectedSectionId, setSelectedSectionId] = useState(sectionId)
+  const [linkedSectionIds, setLinkedSectionIds] = useState<string[]>(taskLinkedSectionIds ?? [])
 
   const monthLabel = MONTHS.find(m => m.id === monthId)?.label || ''
 
@@ -53,12 +56,23 @@ export function EditPanel({
   const handleSave = async () => {
     setLoading(true)
     try {
+      // セルデータを保存
       const { data } = await (supabase.from('task_cells') as any)
         .upsert(
           { task_id: taskId, month_id: monthId, content: status || null, assignee: assignee || null, cell_date: cellDate || null, memo: memo || null },
           { onConflict: 'task_id, month_id' }
         ).select().single()
       if (data) onSaved(data as TaskCell)
+
+      // 共同担当部署（linked_section_ids）を保存
+      const prevIds = (taskLinkedSectionIds ?? []).slice().sort().join(',')
+      const newIds  = linkedSectionIds.slice().sort().join(',')
+      if (prevIds !== newIds) {
+        await (supabase.from('tasks') as any)
+          .update({ linked_section_ids: linkedSectionIds })
+          .eq('id', taskId)
+        if (onLinkedSectionsChanged) onLinkedSectionsChanged(taskId, linkedSectionIds)
+      }
     } finally {
       setLoading(false)
     }
@@ -218,6 +232,44 @@ export function EditPanel({
               >
                 🗑 セル削除
               </button>
+            )}
+          </div>
+
+          {/* ── 共同担当部署 ── */}
+          <div style={{ paddingTop:12, borderTop:'1px solid #E2E8F0' }}>
+            <label style={{ display:'block', fontSize:'.65rem', fontWeight:700, color:'#64748B', textTransform:'uppercase', letterSpacing:'.06em', marginBottom:6 }}>🔗 共同担当部署</label>
+            <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
+              {sections.filter(sec => sec.id !== sectionId).map(sec => {
+                const isLinked = linkedSectionIds.includes(sec.id)
+                return (
+                  <label
+                    key={sec.id}
+                    style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer', padding:'6px 10px', borderRadius:7, border:`1.5px solid ${isLinked ? (sec.color || '#2563EB') : '#E2E8F0'}`, background: isLinked ? `${sec.color || '#2563EB'}15` : '#FAFAFA', transition:'all .12s' }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isLinked}
+                      onChange={() => {
+                        setLinkedSectionIds(prev =>
+                          isLinked ? prev.filter(id => id !== sec.id) : [...prev, sec.id]
+                        )
+                      }}
+                      style={{ accentColor: sec.color || '#2563EB', width:14, height:14, flexShrink:0 }}
+                    />
+                    <span style={{ fontSize:'.8rem', color: isLinked ? '#1e293b' : '#64748B', fontWeight: isLinked ? 700 : 400, lineHeight:1.2 }}>
+                      {sec.name}
+                    </span>
+                    {isLinked && (
+                      <span style={{ marginLeft:'auto', fontSize:'.62rem', color: sec.color || '#2563EB', fontWeight:700 }}>共有中</span>
+                    )}
+                  </label>
+                )
+              })}
+            </div>
+            {linkedSectionIds.length > 0 && (
+              <div style={{ fontSize:'.7rem', color:'#64748B', marginTop:6, lineHeight:1.4 }}>
+                「保存」ボタンで共同担当部署に自動反映されます
+              </div>
             )}
           </div>
 
