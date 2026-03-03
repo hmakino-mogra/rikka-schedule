@@ -6,6 +6,7 @@ import { SectionWithTasks, TaskWithCells, TaskCell, Milestone, MONTHS, CURRENT_M
 import { GanttTable } from './GanttTable'
 import { EditPanel } from './EditPanel'
 import { AddTaskModal } from './AddTaskModal'
+import { AddSectionModal } from './AddSectionModal'
 import { MilestonePopover } from './MilestonePopover'
 import { DatePopover } from './DatePopover'
 
@@ -27,6 +28,7 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
   } | null>(null)
   const [addModal, setAddModal] = useState(false)
   const [addModalSectionId, setAddModalSectionId] = useState<string | undefined>(undefined)
+  const [addSectionModal, setAddSectionModal] = useState(false)
   const [milestonePopover, setMilestonePopover] = useState<{
     monthId: number
     anchor: DOMRect
@@ -199,6 +201,11 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
     showToast('タスクを削除しました')
   }
 
+  const handleSectionAdded = (section: any) => {
+    setSections(prev => [...prev, section])
+    showToast(`「${section.name}」セクションを追加しました ✓`)
+  }
+
   return (
     <div className="w-full h-screen flex flex-col bg-white">
       {/* Header Row 1 */}
@@ -228,7 +235,13 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
         <div style={{ fontSize:'.72rem', color:'rgba(255,255,255,.55)', whiteSpace:'nowrap' }}>
           進捗: <span style={{ color:'#E8C96A', fontWeight:700 }}>{completedCount}/{totalTasks} ({percentage}%)</span>
         </div>
-        {/* Add button */}
+        {/* Add buttons */}
+        <button
+          onClick={() => setAddSectionModal(true)}
+          style={{ display:'flex', alignItems:'center', gap:5, padding:'7px 13px', background:'rgba(201,168,76,.15)', color:'#E8C96A', border:'1px solid rgba(201,168,76,.35)', borderRadius:7, fontSize:'.76rem', fontWeight:700, cursor:'pointer', fontFamily:'inherit', whiteSpace:'nowrap' }}
+        >
+          ＋ セクション追加
+        </button>
         <button
           onClick={() => { setAddModalSectionId(undefined); setAddModal(true) }}
           style={{ display:'flex', alignItems:'center', gap:5, padding:'7px 13px', background:'#C9A84C', color:'#0D2137', border:'none', borderRadius:7, fontSize:'.76rem', fontWeight:700, cursor:'pointer', fontFamily:'inherit', whiteSpace:'nowrap' }}
@@ -355,6 +368,14 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
             setAddModalSectionId(undefined)
           }}
           onAdded={handleTaskAdded}
+        />
+      )}
+
+      {/* Add Section Modal */}
+      {addSectionModal && (
+        <AddSectionModal
+          onClose={() => setAddSectionModal(false)}
+          onAdded={handleSectionAdded}
         />
       )}
 
