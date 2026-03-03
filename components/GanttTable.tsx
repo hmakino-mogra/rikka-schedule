@@ -48,8 +48,9 @@ function getTaskAlert(task: TaskWithCells): AlertLevel {
     .some(m => {
       const c = task.cells.find(cell => cell.month_id === m.id)
       if (!c) return false
-      // cell_date が過去 → 実施済みとみなす
-      if (c.cell_date && new Date(c.cell_date + 'T00:00:00') < today2) return false
+      // cell_date が過去 → 実施済みとみなす（期間がある場合は終了日で判定）
+      const cellCheckDate = c.cell_date_end || c.cell_date
+      if (cellCheckDate && new Date(cellCheckDate + 'T00:00:00') < today2) return false
       // content が過去の令和日付 → 実施済みとみなす
       const rDate = parseReiwaDate(c.content || '')
       if (rDate && rDate < today2) return false
@@ -133,10 +134,12 @@ export function GanttTable({
   const renderCellContent = (cell: TaskCell) => {
     const today = new Date(); today.setHours(0, 0, 0, 0)
 
-    // cell_date による過去判定
-    const isPastCellDate = cell.cell_date
-      ? new Date(cell.cell_date + 'T00:00:00') < today
-      : false
+    // cell_date による過去判定 - 期間がある場合は終了日で判定
+    const isPastCellDate = (() => {
+      if (!cell.cell_date) return false
+      const checkDate = cell.cell_date_end || cell.cell_date  // 期間モードは終了日基準
+      return new Date(checkDate + 'T00:00:00') < today
+    })()
 
     // content が令和日付文字列の場合の過去判定 (例: "R7.12.19")
     const rDate = parseReiwaDate(cell.content || '')
@@ -496,6 +499,18 @@ export function GanttTable({
                       const cell = task.cells.find(c => c.month_id === month.id)
                       const isCurrentMonth = month.id === CURRENT_MONTH_ID
                       const isMainEvent = (month as any).isMain
+
+                      // 期間セルの跨ぎ検出: このタスクに cell_date_end があり、このmonthをカバーするセルを探す
+                      const mo = month as unknown as { year: number; month: number }
+                      const spanningCell = !cell ? (task.cells.find(c => {
+                        if (!c.cell_date || !c.cell_date_end) return false
+                        const mStart = new Date(mo.year, mo.month - 1, 1)
+                        const mEnd   = new Date(mo.year, mo.month, 0)       // 月末日
+                        const rStart = new Date(c.cell_date    + 'T00:00:00')
+                        const rEnd   = new Date(c.cell_date_end + 'T00:00:00')
+                        return rStart <= mEnd && rEnd >= mStart
+                      }) ?? null) : null
+
                       // 遅延・期限切れの月セルは背景を強調
                       const cellAlertBg = (() => {
                         if (isMainEvent) return 'rgba(220,38,38,.04)'
@@ -513,7 +528,7 @@ export function GanttTable({
 
                       return (
                         <td key={month.id}
-                          onClick={() => onCellClick(task.id, month.id, task.name, section.name, cell || null, section.id)}
+                          onClick={() => onCellClick(task.id, month.id, task.name, section.name, cell || spanningCell || null, section.id)}
                           style={{
                             height:40, borderBottom:'1px solid #E2E8F0',
                             textAlign:'center', cursor:'pointer', verticalAlign:'middle',
@@ -525,6 +540,16 @@ export function GanttTable({
                           }}
                         >
                           {cell && renderCellContent(cell)}
+                          {/* 期間バー: cell_date_end がある範囲の月に跨ぎバーを表示 */}
+                          {!cell && spanningCell && (
+                            <div style={{
+                              height: 8,
+                              background: barColor,
+                              opacity: 0.35,
+                              margin: '0 3px',
+                              borderRadius: 3,
+                            }} />
+                          )}
                         </td>
                       )
                     })}
