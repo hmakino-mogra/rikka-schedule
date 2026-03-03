@@ -383,32 +383,32 @@ export function GanttTable({
                 return (
                   <tr
                     key={`${section.id}-${task.id}`}
-                    draggable={!isLinkedTask}
+                    draggable={true}
                     onMouseEnter={() => setHoveredTaskKey(taskKey)}
                     onMouseLeave={() => setHoveredTaskKey(null)}
-                    onDragStart={isLinkedTask ? undefined : e => {
+                    onDragStart={e => {
                       setDraggedTaskId(task.id)
                       e.dataTransfer.effectAllowed = 'move'
                       e.dataTransfer.setData('text/plain', task.id)
                     }}
-                    onDragOver={isLinkedTask ? undefined : e => {
+                    onDragOver={e => {
                       e.preventDefault()
                       if (!draggedTaskId || draggedTaskId === task.id) return
                       const rect = e.currentTarget.getBoundingClientRect()
                       const position = e.clientY < rect.top + rect.height / 2 ? 'before' : 'after'
                       setDragOverInfo({ taskId: task.id, position })
                     }}
-                    onDragLeave={isLinkedTask ? undefined : e => {
+                    onDragLeave={e => {
                       if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOverInfo(null)
                     }}
-                    onDrop={isLinkedTask ? undefined : e => {
+                    onDrop={e => {
                       e.preventDefault()
                       if (draggedTaskId && draggedTaskId !== task.id && dragOverInfo) {
                         onTaskReorder(draggedTaskId, task.id, dragOverInfo.position === 'before')
                       }
                       setDraggedTaskId(null); setDragOverInfo(null)
                     }}
-                    onDragEnd={isLinkedTask ? undefined : () => { setDraggedTaskId(null); setDragOverInfo(null) }}
+                    onDragEnd={() => { setDraggedTaskId(null); setDragOverInfo(null) }}
                     style={{ opacity: draggedTaskId === task.id ? 0.35 : 1, transition:'opacity .1s' }}
                   >
                     <td
@@ -430,29 +430,23 @@ export function GanttTable({
                             />
                           ) : (
                             <div style={{ display:'flex', alignItems:'center', gap:2, minWidth:0 }}>
-                              {/* ドラッグハンドル（リンクタスクは非表示） */}
-                              {!isLinkedTask && (
-                                <span
-                                  title="ドラッグして並べ替え"
-                                  style={{ flexShrink:0, fontSize:'.85rem', color: isHovered ? '#94A3B8' : 'transparent', cursor:'grab', lineHeight:1, userSelect:'none', transition:'color .1s' }}
-                                >⠿</span>
-                              )}
-                              {/* リンクバッジ */}
-                              {isLinkedTask && (
-                                <span title="共同担当タスク" style={{ flexShrink:0, fontSize:'.65rem', lineHeight:1 }}>🔗</span>
-                              )}
-                              {/* 自タスクで共同担当がある場合もバッジ表示 */}
-                              {!isLinkedTask && (task.linked_section_ids ?? []).length > 0 && !isHovered && (
-                                <span title="共同担当部署あり" style={{ flexShrink:0, fontSize:'.65rem', lineHeight:1 }}>🔗</span>
+                              {/* ドラッグハンドル */}
+                              <span
+                                title="ドラッグして並べ替え"
+                                style={{ flexShrink:0, fontSize:'.85rem', color: isHovered ? '#94A3B8' : 'transparent', cursor: isLinkedTask ? 'default' : 'grab', lineHeight:1, userSelect:'none', transition:'color .1s' }}
+                              >⠿</span>
+                              {/* 🔗バッジ（リンクタスク or 共同担当あり） */}
+                              {(isLinkedTask || ((task.linked_section_ids ?? []).length > 0 && !isHovered)) && (
+                                <span title={isLinkedTask ? '共同担当タスク' : '共同担当部署あり'} style={{ flexShrink:0, fontSize:'.65rem', lineHeight:1 }}>🔗</span>
                               )}
                               <span
-                                style={{ fontSize:'.78rem', color: isLinkedTask ? '#2563EB' : '#334155', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', flex:1, fontStyle: isLinkedTask ? 'italic' : 'normal' }}
-                                title={isLinkedTask ? `共同担当タスク（元: ${task.section_id}）` : task.name}
-                                onDoubleClick={isLinkedTask ? undefined : () => handleTaskNameDoubleClick(task.id, task.name)}
+                                style={{ fontSize:'.78rem', color:'#334155', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', flex:1 }}
+                                title={task.name}
+                                onDoubleClick={() => handleTaskNameDoubleClick(task.id, task.name)}
                               >
                                 {task.name}
                               </span>
-                              {isHovered && !isLinkedTask && (
+                              {isHovered && (
                                 <button
                                   onClick={e => { e.stopPropagation(); handleTaskNameDoubleClick(task.id, task.name) }}
                                   title="タスク名を編集"
