@@ -24,6 +24,7 @@ export interface Database {
           name: string
           due_date: string | null
           sort_order: number
+          linked_section_ids: string[] | null
           created_at: string
           updated_at: string
         }
