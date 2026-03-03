@@ -114,6 +114,7 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
 
   // ── 統計 ──
   const daysUntilEvent = Math.ceil((new Date(2026, 9, 17).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+  const daysUntilTokyo = Math.ceil((new Date(2026, 5, 20).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
   const completedCount = sections.reduce(
     (total, sec) => total + sec.tasks.filter(t => t.cells.some(c => c.content === '済')).length, 0
   )
@@ -321,7 +322,10 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
         </div>
         <div style={{ width:1, height:20, background:'rgba(255,255,255,.12)', flexShrink:0 }}></div>
         <div style={{ background:'rgba(201,168,76,.13)', border:'1px solid rgba(201,168,76,.3)', borderRadius:7, padding:'5px 11px', color:'#E8C96A', fontSize:'.73rem', whiteSpace:'nowrap', display:'flex', alignItems:'center', gap:5 }}>
-          🎉 本番まで <span style={{ fontSize:'1.05rem', fontWeight:700 }}>{daysUntilEvent}</span> 日
+          🎉 六華同窓会まで <span style={{ fontSize:'1.05rem', fontWeight:700 }}>{daysUntilEvent}</span> 日
+        </div>
+        <div style={{ background:'rgba(96,165,250,.1)', border:'1px solid rgba(96,165,250,.3)', borderRadius:7, padding:'5px 11px', color:'#93C5FD', fontSize:'.73rem', whiteSpace:'nowrap', display:'flex', alignItems:'center', gap:5 }}>
+          🗼 東京六華まで <span style={{ fontSize:'1.05rem', fontWeight:700 }}>{daysUntilTokyo}</span> 日
         </div>
         <div style={{ flex:1 }}></div>
         <div style={{ fontSize:'.72rem', color:'rgba(255,255,255,.55)', whiteSpace:'nowrap' }}>

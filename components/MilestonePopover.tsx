@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Milestone } from '@/lib/database.types'
 
@@ -55,58 +55,60 @@ export function MilestonePopover({ monthId, milestone, anchor, onClose, onSaved,
   return (
     <>
       <div
-        className="fixed"
-        style={{ top: 0, right: 0, bottom: 0, left: 0, zIndex: 150 }}
+        style={{ position:'fixed', top:0, right:0, bottom:0, left:0, zIndex:150 }}
         onClick={onClose}
       />
-      <div
-        className="fixed bg-white rounded-lg shadow-lg border border-slate-200 w-80 p-4 space-y-3"
-        style={{ zIndex: 200, top: `${top}px`, left: `${left}px` }}
-      >
+      <div style={{
+        position:'fixed', zIndex:200,
+        top:`${top}px`, left:`${left}px`,
+        background:'white', borderRadius:10,
+        boxShadow:'0 8px 32px rgba(0,0,0,.18)',
+        border:'1px solid #E2E8F0',
+        width:300, padding:16,
+        display:'flex', flexDirection:'column', gap:12,
+      }}>
         {/* Header */}
-        <div className="flex items-center justify-between pb-2 border-b border-slate-200">
-          <h3 className="font-semibold text-slate-700">マイルストーン</h3>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', paddingBottom:10, borderBottom:'1px solid #E2E8F0' }}>
+          <h3 style={{ fontWeight:700, color:'#334155', fontSize:'.9rem', margin:0 }}>マイルストーン</h3>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600"
-          >
-            ✕
-          </button>
+            style={{ background:'none', border:'none', cursor:'pointer', color:'#94A3B8', fontSize:'1rem', lineHeight:1, padding:2, fontFamily:'inherit' }}
+          >✕</button>
         </div>
 
         {/* Text */}
         <div>
-          <label className="block text-xs font-semibold text-slate-600 mb-1">
+          <label style={{ display:'block', fontSize:'.72rem', fontWeight:700, color:'#475569', marginBottom:4 }}>
             テキスト
           </label>
           <textarea
             value={text}
             onChange={e => setText(e.target.value)}
             placeholder="マイルストーンの説明..."
-            className="w-full px-2 py-1.5 text-xs border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-[#C9A84C] resize-none h-16"
+            style={{ width:'100%', padding:'6px 8px', fontSize:'.78rem', border:'1px solid #CBD5E1', borderRadius:6, resize:'none', height:64, outline:'none', fontFamily:'inherit', boxSizing:'border-box', lineHeight:1.5 }}
           />
         </div>
 
         {/* Main Event Checkbox */}
-        <div className="flex items-center gap-2">
+        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
           <input
             type="checkbox"
             id="isMain"
             checked={isMain}
             onChange={e => setIsMain(e.target.checked)}
-            className="w-4 h-4"
+            style={{ width:16, height:16, cursor:'pointer' }}
           />
-          <label htmlFor="isMain" className="text-xs font-medium text-slate-700 cursor-pointer">
+          <label htmlFor="isMain" style={{ fontSize:'.78rem', fontWeight:600, color:'#334155', cursor:'pointer' }}>
             本番イベント（赤表示）
           </label>
         </div>
 
         {/* Buttons */}
-        <div className="flex gap-2 pt-3 border-t border-slate-200">
+        <div style={{ display:'flex', gap:6, paddingTop:10, borderTop:'1px solid #E2E8F0' }}>
           <button
             onClick={handleSave}
             disabled={loading}
-            className="flex-1 px-3 py-1.5 text-xs font-semibold bg-[#C9A84C] text-[#0D2137] rounded hover:opacity-90 disabled:opacity-50"
+            style={{ flex:1, padding:'6px 12px', fontSize:'.78rem', fontWeight:700, background:'#C9A84C', color:'#0D2137', border:'none', borderRadius:6, cursor:'pointer', fontFamily:'inherit', opacity:loading?0.5:1 }}
           >
             保存
           </button>
@@ -114,14 +116,14 @@ export function MilestonePopover({ monthId, milestone, anchor, onClose, onSaved,
             <button
               onClick={handleDelete}
               disabled={loading}
-              className="px-3 py-1.5 text-xs font-semibold bg-red-100 text-red-700 rounded hover:bg-red-200 disabled:opacity-50"
+              style={{ padding:'6px 12px', fontSize:'.78rem', fontWeight:700, background:'#FEF2F2', color:'#EF4444', border:'1px solid #FCA5A5', borderRadius:6, cursor:'pointer', fontFamily:'inherit', opacity:loading?0.5:1 }}
             >
               削除
             </button>
           )}
           <button
             onClick={onClose}
-            className="px-3 py-1.5 text-xs font-semibold border border-slate-300 text-slate-600 rounded hover:bg-slate-50"
+            style={{ padding:'6px 12px', fontSize:'.78rem', fontWeight:700, background:'none', color:'#64748B', border:'1px solid #CBD5E1', borderRadius:6, cursor:'pointer', fontFamily:'inherit' }}
           >
             ✕
           </button>
