@@ -383,32 +383,32 @@ export function GanttTable({
                 return (
                   <tr
                     key={`${section.id}-${task.id}`}
-                    draggable={true}
+                    draggable={!isLinkedTask}
                     onMouseEnter={() => setHoveredTaskKey(taskKey)}
                     onMouseLeave={() => setHoveredTaskKey(null)}
-                    onDragStart={e => {
+                    onDragStart={isLinkedTask ? undefined : e => {
                       setDraggedTaskId(task.id)
                       e.dataTransfer.effectAllowed = 'move'
                       e.dataTransfer.setData('text/plain', task.id)
                     }}
-                    onDragOver={e => {
+                    onDragOver={isLinkedTask ? undefined : e => {
                       e.preventDefault()
                       if (!draggedTaskId || draggedTaskId === task.id) return
                       const rect = e.currentTarget.getBoundingClientRect()
                       const position = e.clientY < rect.top + rect.height / 2 ? 'before' : 'after'
                       setDragOverInfo({ taskId: task.id, position })
                     }}
-                    onDragLeave={e => {
+                    onDragLeave={isLinkedTask ? undefined : e => {
                       if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOverInfo(null)
                     }}
-                    onDrop={e => {
+                    onDrop={isLinkedTask ? undefined : e => {
                       e.preventDefault()
                       if (draggedTaskId && draggedTaskId !== task.id && dragOverInfo) {
                         onTaskReorder(draggedTaskId, task.id, dragOverInfo.position === 'before')
                       }
                       setDraggedTaskId(null); setDragOverInfo(null)
                     }}
-                    onDragEnd={() => { setDraggedTaskId(null); setDragOverInfo(null) }}
+                    onDragEnd={isLinkedTask ? undefined : () => { setDraggedTaskId(null); setDragOverInfo(null) }}
                     style={{ opacity: draggedTaskId === task.id ? 0.35 : 1, transition:'opacity .1s' }}
                   >
                     <td
@@ -432,8 +432,8 @@ export function GanttTable({
                             <div style={{ display:'flex', alignItems:'center', gap:2, minWidth:0 }}>
                               {/* ドラッグハンドル */}
                               <span
-                                title="ドラッグして並べ替え"
-                                style={{ flexShrink:0, fontSize:'.85rem', color: isHovered ? '#94A3B8' : 'transparent', cursor: isLinkedTask ? 'default' : 'grab', lineHeight:1, userSelect:'none', transition:'color .1s' }}
+                                title={isLinkedTask ? '共同担当タスクは並べ替え不可（元セクションで操作）' : 'ドラッグして並べ替え'}
+                                style={{ flexShrink:0, fontSize:'.85rem', color: isHovered ? (isLinkedTask ? '#CBD5E1' : '#94A3B8') : 'transparent', cursor: isLinkedTask ? 'not-allowed' : 'grab', lineHeight:1, userSelect:'none', transition:'color .1s' }}
                               >⠿</span>
                               {/* 🔗バッジ（リンクタスク or 共同担当あり） */}
                               {(isLinkedTask || ((task.linked_section_ids ?? []).length > 0 && !isHovered)) && (
