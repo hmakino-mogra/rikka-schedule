@@ -178,9 +178,9 @@ export function GanttTable({
         )}
         {cell.assignee && (
           <span style={{
-            fontSize:'.58rem', color:'#64748B', lineHeight:1,
-            maxWidth:74, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap',
-            background:'#F1F5F9', borderRadius:3, padding:'1px 4px',
+            fontSize:'.65rem', color:'#475569', lineHeight:1,
+            maxWidth:78, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap',
+            background:'#F1F5F9', borderRadius:3, padding:'2px 5px',
           }}>
             👤 {cell.assignee}
           </span>
@@ -371,9 +371,14 @@ export function GanttTable({
                 const isLastTask  = taskIdx === section.tasks.length - 1
                 // このセクションにリンクされた外部タスクかどうか
                 const isLinkedTask = task.section_id !== section.id
+                // 完了タスク判定
+                const isDone = task.cells.some(c => c.content === '済')
+
+                // セクションカラーを薄く行背景に反映（約5%透明度）
+                const sectionTint = section.color ? `${section.color}0D` : '#FAFAFA'
 
                 // アラートに応じた色設定
-                const rowBg    = alert === 'overdue' ? 'rgba(239,68,68,.05)'  : alert === 'delayed' ? 'rgba(245,158,11,.05)' : 'white'
+                const rowBg    = alert === 'overdue' ? 'rgba(239,68,68,.05)'  : alert === 'delayed' ? 'rgba(245,158,11,.05)' : sectionTint
                 const barColor = alert === 'overdue' ? '#EF4444'              : alert === 'delayed' ? '#F59E0B'              : (section.color || '#94a3b8')
                 // ホバー時の行背景
                 const hoverTaskBg = alert === 'overdue' ? 'rgba(239,68,68,.11)' : alert === 'delayed' ? 'rgba(245,158,11,.11)' : '#EFF6FF'
@@ -445,7 +450,7 @@ export function GanttTable({
                                 <span title={isLinkedTask ? '共同担当タスク' : '共同担当部署あり'} style={{ flexShrink:0, fontSize:'.65rem', lineHeight:1 }}>🔗</span>
                               )}
                               <span
-                                style={{ fontSize:'.78rem', color:'#334155', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', flex:1 }}
+                                style={{ fontSize:'.78rem', color: isDone ? '#94A3B8' : '#334155', textDecoration: isDone ? 'line-through' : 'none', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', flex:1 }}
                                 title={task.name}
                                 onDoubleClick={() => handleTaskNameDoubleClick(task.id, task.name)}
                               >
@@ -517,7 +522,7 @@ export function GanttTable({
                         if (isCurrentMonth) return 'rgba(37,99,235,.04)'
                         if (alert !== 'ok' && alert !== 'done' && month.id < CURRENT_MONTH_ID && cell?.content === '予定')
                           return 'rgba(245,158,11,.08)'
-                        return 'white'
+                        return sectionTint
                       })()
                       // ホバー時の月セル背景
                       const monthHoverBg = isMainEvent
@@ -549,6 +554,10 @@ export function GanttTable({
                               margin: '0 3px',
                               borderRadius: 3,
                             }} />
+                          )}
+                          {/* 空セルのホバーヒント */}
+                          {!cell && !spanningCell && isHovered && (
+                            <span style={{ fontSize:'.72rem', color:'#CBD5E1', userSelect:'none', lineHeight:1 }}>＋</span>
                           )}
                         </td>
                       )
