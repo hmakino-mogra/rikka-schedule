@@ -319,22 +319,26 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
               color: sectionFilter === 'すべて' ? 'white' : 'rgba(255,255,255,.45)',
             }}
           >全部署</button>
-          {sections.map(sec => (
-            <button
-              key={sec.id}
-              onClick={() => setSectionFilter(sec.id)}
-              style={{
-                padding:'2px 9px', borderRadius:12, cursor:'pointer', fontFamily:'inherit', flexShrink:0,
-                fontSize:'.68rem', fontWeight:600, transition:'all .12s', whiteSpace:'nowrap',
-                display:'flex', alignItems:'center', gap:4,
-                border: sectionFilter === sec.id ? `1px solid ${sec.color || '#94a3b8'}` : '1px solid rgba(255,255,255,.12)',
-                background: sectionFilter === sec.id ? `${sec.color}22` : 'transparent',
-                color: sectionFilter === sec.id ? (sec.color || 'white') : 'rgba(255,255,255,.45)',
-              }}
-            >
-              <span style={{ fontSize:'.55rem' }}>●</span>{sec.name}
-            </button>
-          ))}
+          {sections.map(sec => {
+            const isSelected = sectionFilter === sec.id
+            return (
+              <button
+                key={sec.id}
+                onClick={() => setSectionFilter(isSelected ? 'すべて' : sec.id)}
+                style={{
+                  padding:'2px 9px', borderRadius:12, cursor:'pointer', fontFamily:'inherit', flexShrink:0,
+                  fontSize:'.68rem', fontWeight:600, transition:'all .12s', whiteSpace:'nowrap',
+                  display:'flex', alignItems:'center', gap:4,
+                  border: isSelected ? `1px solid ${sec.color || '#94a3b8'}` : '1px solid rgba(255,255,255,.12)',
+                  background: isSelected ? `${sec.color}22` : 'transparent',
+                  color: isSelected ? (sec.color || 'white') : 'rgba(255,255,255,.45)',
+                }}
+              >
+                <span style={{ fontSize:'.55rem' }}>●</span>{sec.name}
+                {isSelected && <span style={{ fontSize:'.55rem', marginLeft:1, opacity:.7 }}>✕</span>}
+              </button>
+            )
+          })}
         </div>
       </div>
 
