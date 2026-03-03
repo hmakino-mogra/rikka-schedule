@@ -26,6 +26,7 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
     secName: string
     sectionId: string
     cell: TaskCell | null
+    taskLinkedSectionIds: string[] | null
   } | null>(null)
   const [addModal, setAddModal] = useState(false)
   const [addModalSectionId, setAddModalSectionId] = useState<string | undefined>(undefined)
@@ -119,27 +120,36 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
   const totalTasks = sections.reduce((total, sec) => total + sec.tasks.length, 0)
   const percentage = totalTasks > 0 ? Math.round((completedCount / totalTasks) * 100) : 0
 
-  // ── フィルタリング ──
+  // ── フィルタリング（リンクタスクを各セクションに展開）──
+  const allTasks = sections.flatMap(sec => sec.tasks)
   const filteredSections = sections
     .filter(sec => sectionFilter === 'すべて' || sec.id === sectionFilter)
-    .map(sec => ({
-    ...sec,
-    tasks: sec.tasks.filter(task => {
-      const matchesSearch = task.name.toLowerCase().includes(searchQuery.toLowerCase())
-      const matchesFilter =
-        currentFilter === 'すべて' ||
-        (currentFilter === '未定'
-          ? !task.cells.some(c => c.content === '済' || c.content === '予定')
-          : task.cells.some(c => c.content === currentFilter))
-      return matchesSearch && matchesFilter
+    .map(sec => {
+      // 他セクションのタスクのうち、このセクションにリンクされているものを追加
+      const linkedTasks = allTasks.filter(
+        task => task.section_id !== sec.id && (task.linked_section_ids ?? []).includes(sec.id)
+      )
+      const allSecTasks = [...sec.tasks, ...linkedTasks]
+      return {
+        ...sec,
+        tasks: allSecTasks.filter(task => {
+          const matchesSearch = task.name.toLowerCase().includes(searchQuery.toLowerCase())
+          const matchesFilter =
+            currentFilter === 'すべて' ||
+            (currentFilter === '未定'
+              ? !task.cells.some(c => c.content === '済' || c.content === '予定')
+              : task.cells.some(c => c.content === currentFilter))
+          return matchesSearch && matchesFilter
+        })
+      }
     })
-  }))
 
   // ── ハンドラー ──
   const handleCellClick = (taskId: string, monthId: number, taskName: string, secName: string, cell: TaskCell | null, sectionId: string) => {
     setDatePopover(null)
     setMilestonePopover(null)
-    setEditPanel({ open: true, taskId, monthId, taskName, secName, sectionId, cell: cell || null })
+    const task = sections.flatMap(s => s.tasks).find(t => t.id === taskId)
+    setEditPanel({ open: true, taskId, monthId, taskName, secName, sectionId, cell: cell || null, taskLinkedSectionIds: task?.linked_section_ids ?? null })
   }
 
   const handleTaskNameEdit = async (taskId: string, newName: string) => {
@@ -213,19 +223,30 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
 
   // ── タスクのドラッグ並び替え ──
   const handleTaskReorder = (fromTaskId: string, toTaskId: string, insertBefore: boolean) => {
-    setSections(prev => prev.map(sec => {
-      const fromIdx = sec.tasks.findIndex(t => t.id === fromTaskId)
-      const toIdx   = sec.tasks.findIndex(t => t.id === toTaskId)
-      if (fromIdx < 0 || toIdx < 0 || fromIdx === toIdx) return sec
-      const newTasks = [...sec.tasks]
-      const [movedTask] = newTasks.splice(fromIdx, 1)
-      const newToIdx = newTasks.findIndex(t => t.id === toTaskId)
-      newTasks.splice(insertBefore ? newToIdx : newToIdx + 1, 0, movedTask)
-      newTasks.forEach((t, i) => {
-        ;(supabase.from('tasks') as any).update({ sort_order: i }).eq('id', t.id)
+    // まず新しい順序を計算してから state と DB を更新
+    setSections(prev => {
+      let orderUpdates: { id: string; sort_order: number }[] = []
+      const newSections = prev.map(sec => {
+        const fromIdx = sec.tasks.findIndex(t => t.id === fromTaskId)
+        const toIdx   = sec.tasks.findIndex(t => t.id === toTaskId)
+        if (fromIdx < 0 || toIdx < 0 || fromIdx === toIdx) return sec
+        const newTasks = [...sec.tasks]
+        const [movedTask] = newTasks.splice(fromIdx, 1)
+        const newToIdx = newTasks.findIndex(t => t.id === toTaskId)
+        newTasks.splice(insertBefore ? newToIdx : newToIdx + 1, 0, movedTask)
+        orderUpdates = newTasks.map((t, i) => ({ id: t.id, sort_order: i }))
+        return { ...sec, tasks: newTasks }
       })
-      return { ...sec, tasks: newTasks }
-    }))
+      // DB に保存（.then() で確実にリクエストを発火させる）
+      if (orderUpdates.length > 0) {
+        Promise.all(
+          orderUpdates.map(({ id, sort_order }) =>
+            (supabase.from('tasks') as any).update({ sort_order }).eq('id', id)
+          )
+        ).catch(console.error)
+      }
+      return newSections
+    })
   }
 
   // ── タスクのセクション間移動 ──
@@ -395,6 +416,7 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
           sectionId={editPanel.sectionId}
           cell={editPanel.cell}
           sections={sections}
+          taskLinkedSectionIds={editPanel.taskLinkedSectionIds}
           onClose={() => setEditPanel(null)}
           onSaved={cell => {
             setSections(prev =>
@@ -426,6 +448,16 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
           }}
           onTaskDeleted={handleTaskDeleted}
           onSectionChange={handleTaskSectionChange}
+          onLinkedSectionsChanged={(taskId, linkedIds) => {
+            setSections(prev =>
+              prev.map(sec => ({
+                ...sec,
+                tasks: sec.tasks.map(task =>
+                  task.id === taskId ? { ...task, linked_section_ids: linkedIds } : task
+                )
+              }))
+            )
+          }}
         />
       )}
 
