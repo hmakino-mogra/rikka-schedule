@@ -19,6 +19,13 @@ interface Props {
   onSectionMove: (sectionId: string, direction: 'up' | 'down') => void
 }
 
+// ── 令和日付文字列 (例: "R7.12.19") をパース ──────────────────
+function parseReiwaDate(s: string): Date | null {
+  const m = s?.match(/^R(\d+)\.(\d+)\.(\d+)$/)
+  if (!m) return null
+  return new Date(parseInt(m[1]) + 2018, parseInt(m[2]) - 1, parseInt(m[3]))
+}
+
 // ── アラートレベル判定 ──────────────────────────────────────────
 type AlertLevel = 'overdue' | 'delayed' | 'done' | 'ok'
 
@@ -33,15 +40,18 @@ function getTaskAlert(task: TaskWithCells): AlertLevel {
     if (due < today) return 'overdue'
   }
 
-  // 過去月に「予定」が付いているが「済」でも「実施済(past cell_date)」でもない → 遅延中
+  // 過去月に「予定」または令和日付が付いているが「済み扱い」でない → 遅延中
   const today2 = new Date(); today2.setHours(0, 0, 0, 0)
   const hasDelayed = MONTHS
     .filter(m => m.id < CURRENT_MONTH_ID)
     .some(m => {
       const c = task.cells.find(cell => cell.month_id === m.id)
       if (!c) return false
-      // 過去の実行日が設定されていれば済みとみなす
+      // cell_date が過去 → 実施済みとみなす
       if (c.cell_date && new Date(c.cell_date + 'T00:00:00') < today2) return false
+      // content が過去の令和日付 → 実施済みとみなす
+      const rDate = parseReiwaDate(c.content || '')
+      if (rDate && rDate < today2) return false
       return c.content === '予定'
     })
   if (hasDelayed) return 'delayed'
@@ -118,27 +128,43 @@ export function GanttTable({
   // ── セル内容（ステータス + 実行日 + 担当者）──
   const renderCellContent = (cell: TaskCell) => {
     const today = new Date(); today.setHours(0, 0, 0, 0)
-    const isPastDate = cell.cell_date
+
+    // cell_date による過去判定
+    const isPastCellDate = cell.cell_date
       ? new Date(cell.cell_date + 'T00:00:00') < today
       : false
-    // 実行日が過去 かつ まだ「済」でない → 自動的に済み扱いで表示
-    const autoCompleted = isPastDate && cell.content !== '済'
+
+    // content が令和日付文字列の場合の過去判定 (例: "R7.12.19")
+    const rDate = parseReiwaDate(cell.content || '')
+    const isReiwaDateContent = rDate !== null
+    const isPastReiwaContent = isReiwaDateContent && rDate! < today
+
+    const isPast = isPastCellDate || isPastReiwaContent
+    const autoCompleted = isPast && cell.content !== '済'
+
+    // 令和日付コンテンツの表示ラベル（例: "R7.12.19" → "12/19"）
+    const reiwaDisplayDate = isReiwaDateContent && rDate
+      ? `${rDate.getMonth() + 1}/${rDate.getDate()}`
+      : null
+
     return (
       <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:2, padding:'2px 0' }}>
         {autoCompleted
           ? <span style={{ display:'inline-flex', alignItems:'center', gap:3, padding:'2px 7px', borderRadius:11, fontSize:'.67rem', fontWeight:700, lineHeight:1, background:'#F1F5F9', color:'#94A3B8' }}>✓ 実施済</span>
-          : renderStatusBadge(cell.content)
+          : isReiwaDateContent
+            ? null  // 令和日付コンテンツは下のチップで表示
+            : renderStatusBadge(cell.content)
         }
-        {cell.cell_date && (
+        {/* 令和日付コンテンツ or cell_date をチップ表示 */}
+        {(reiwaDisplayDate || cell.cell_date) && (
           <span style={{
             fontSize:'.6rem', lineHeight:1, fontWeight:700,
             borderRadius:3, padding:'1px 5px',
-            // 過去日: グレー / 未来日: 青
-            color:      isPastDate ? '#94A3B8' : '#2563EB',
-            background: isPastDate ? '#F8FAFC'  : '#EFF6FF',
-            border:     `1px solid ${isPastDate ? '#E2E8F0' : '#BFDBFE'}`,
+            color:      isPast ? '#94A3B8' : '#2563EB',
+            background: isPast ? '#F8FAFC'  : '#EFF6FF',
+            border:     `1px solid ${isPast ? '#E2E8F0' : '#BFDBFE'}`,
           }}>
-            {fmtDate(cell.cell_date)}
+            {reiwaDisplayDate || fmtDate(cell.cell_date!)}
           </span>
         )}
         {cell.assignee && (
