@@ -56,15 +56,7 @@ export function EditPanel({
   const handleSave = async () => {
     setLoading(true)
     try {
-      // セルデータを保存
-      const { data } = await (supabase.from('task_cells') as any)
-        .upsert(
-          { task_id: taskId, month_id: monthId, content: status || null, assignee: assignee || null, cell_date: cellDate || null, memo: memo || null },
-          { onConflict: 'task_id, month_id' }
-        ).select().single()
-      if (data) onSaved(data as TaskCell)
-
-      // 共同担当部署（linked_section_ids）を保存
+      // 1. 共同担当部署（linked_section_ids）を先に保存 → パネルが閉じる前に state を更新
       const prevIds = (taskLinkedSectionIds ?? []).slice().sort().join(',')
       const newIds  = linkedSectionIds.slice().sort().join(',')
       if (prevIds !== newIds) {
@@ -73,6 +65,14 @@ export function EditPanel({
           .eq('id', taskId)
         if (onLinkedSectionsChanged) onLinkedSectionsChanged(taskId, linkedSectionIds)
       }
+
+      // 2. セルデータを保存（onSaved がパネルを閉じる）
+      const { data } = await (supabase.from('task_cells') as any)
+        .upsert(
+          { task_id: taskId, month_id: monthId, content: status || null, assignee: assignee || null, cell_date: cellDate || null, memo: memo || null },
+          { onConflict: 'task_id, month_id' }
+        ).select().single()
+      if (data) onSaved(data as TaskCell)
     } finally {
       setLoading(false)
     }
