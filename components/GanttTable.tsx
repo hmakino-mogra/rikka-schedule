@@ -108,10 +108,19 @@ export function GanttTable({
     return <span style={{ display:'inline-flex', alignItems:'center', gap:3, padding:'2px 7px', borderRadius:11, fontSize:'.67rem', fontWeight:700, lineHeight:1, background:'#DBEAFE', color:'#2563EB' }}>{content}</span>
   }
 
-  // ── セル内容（ステータス + 担当者）──
+  // ── セル内容（ステータス + 実行日 + 担当者）──
   const renderCellContent = (cell: TaskCell) => (
     <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:2, padding:'2px 0' }}>
       {renderStatusBadge(cell.content)}
+      {cell.cell_date && (
+        <span style={{
+          fontSize:'.6rem', color:'#2563EB', lineHeight:1, fontWeight:700,
+          background:'#EFF6FF', borderRadius:3, padding:'1px 5px',
+          border:'1px solid #BFDBFE',
+        }}>
+          {fmtDate(cell.cell_date)}
+        </span>
+      )}
       {cell.assignee && (
         <span style={{
           fontSize:'.58rem', color:'#64748B', lineHeight:1,
