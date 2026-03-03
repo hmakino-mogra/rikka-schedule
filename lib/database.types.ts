@@ -41,6 +41,7 @@ export interface Database {
           assignee: string | null
           memo: string | null
           cell_date: string | null
+          cell_date_end: string | null
           created_at: string
           updated_at: string
         }

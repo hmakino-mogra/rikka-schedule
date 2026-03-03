@@ -29,6 +29,8 @@ export function EditPanel({
   const [status, setStatus] = useState(cell?.content || '')
   const [assignee, setAssignee] = useState(cell?.assignee || '')
   const [cellDate, setCellDate] = useState(cell?.cell_date || '')
+  const [cellDateEnd, setCellDateEnd] = useState(cell?.cell_date_end || '')
+  const [dateMode, setDateMode] = useState<'single' | 'range'>(cell?.cell_date_end ? 'range' : 'single')
   const [memo, setMemo] = useState(cell?.memo || '')
   const [comments, setComments] = useState<Comment[]>([])
   const [newComment, setNewComment] = useState('')
@@ -67,8 +69,8 @@ export function EditPanel({
         if (onLinkedSectionsChanged) onLinkedSectionsChanged(taskId, linkedSectionIds)
       }
 
-      // 2. 実行日（cellDate）を tasks.due_date に自動反映
-      const newDueDate = cellDate || null
+      // 2. 実行日を tasks.due_date に自動反映（期間の場合は終了日を期限とする）
+      const newDueDate = dateMode === 'range' ? (cellDateEnd || cellDate || null) : (cellDate || null)
       await (supabase.from('tasks') as any)
         .update({ due_date: newDueDate })
         .eq('id', taskId)
@@ -77,7 +79,12 @@ export function EditPanel({
       // 3. セルデータを保存（onSaved がパネルを閉じる）
       const { data } = await (supabase.from('task_cells') as any)
         .upsert(
-          { task_id: taskId, month_id: monthId, content: status || null, assignee: assignee || null, cell_date: cellDate || null, memo: memo || null },
+          {
+            task_id: taskId, month_id: monthId, content: status || null,
+            assignee: assignee || null, memo: memo || null,
+            cell_date: cellDate || null,
+            cell_date_end: dateMode === 'range' ? (cellDateEnd || null) : null,
+          },
           { onConflict: 'task_id, month_id' }
         ).select().single()
       if (data) onSaved(data as TaskCell)
@@ -202,14 +209,64 @@ export function EditPanel({
 
           {/* Date */}
           <div>
-            <label style={{ display:'block', fontSize:'.65rem', fontWeight:700, color:'#64748B', textTransform:'uppercase', letterSpacing:'.06em', marginBottom:6 }}>実行日</label>
-            <input
-              type="date"
-              value={cellDate}
-              onChange={e => setCellDate(e.target.value)}
-              style={{ width:'100%', padding:'8px 11px', border:'1.5px solid #E2E8F0', borderRadius:7, fontSize:'.82rem', fontFamily:'inherit', outline:'none', boxSizing:'border-box' }}
-            />
-            {cellDate && <div style={{ fontSize:'.7rem', color:'#2563EB', marginTop:4 }}>令和表記: {toReiwa(cellDate)}</div>}
+            {/* ラベル + 単日/期間トグル */}
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:6 }}>
+              <label style={{ fontSize:'.65rem', fontWeight:700, color:'#64748B', textTransform:'uppercase', letterSpacing:'.06em' }}>実行日</label>
+              <div style={{ display:'flex', border:'1.5px solid #E2E8F0', borderRadius:6, overflow:'hidden' }}>
+                {(['single', 'range'] as const).map((mode, i) => (
+                  <button
+                    key={mode}
+                    onClick={() => { setDateMode(mode); if (mode === 'single') setCellDateEnd('') }}
+                    style={{
+                      padding:'3px 9px', fontSize:'.65rem', fontWeight:700, border:'none', cursor:'pointer', fontFamily:'inherit',
+                      borderLeft: i === 1 ? '1px solid #E2E8F0' : 'none',
+                      background: dateMode === mode ? '#0D2137' : 'white',
+                      color: dateMode === mode ? 'white' : '#94A3B8',
+                      transition:'all .12s',
+                    }}
+                  >{mode === 'single' ? '単日' : '期間'}</button>
+                ))}
+              </div>
+            </div>
+
+            {/* 単日モード */}
+            {dateMode === 'single' && (
+              <>
+                <input
+                  type="date"
+                  value={cellDate}
+                  onChange={e => setCellDate(e.target.value)}
+                  style={{ width:'100%', padding:'8px 11px', border:'1.5px solid #E2E8F0', borderRadius:7, fontSize:'.82rem', fontFamily:'inherit', outline:'none', boxSizing:'border-box' }}
+                />
+                {cellDate && <div style={{ fontSize:'.7rem', color:'#2563EB', marginTop:4 }}>令和表記: {toReiwa(cellDate)}</div>}
+              </>
+            )}
+
+            {/* 期間モード */}
+            {dateMode === 'range' && (
+              <>
+                <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                  <input
+                    type="date"
+                    value={cellDate}
+                    onChange={e => setCellDate(e.target.value)}
+                    style={{ flex:1, padding:'8px 8px', border:'1.5px solid #E2E8F0', borderRadius:7, fontSize:'.78rem', fontFamily:'inherit', outline:'none', boxSizing:'border-box' }}
+                  />
+                  <span style={{ color:'#94A3B8', fontSize:'.9rem', flexShrink:0 }}>〜</span>
+                  <input
+                    type="date"
+                    value={cellDateEnd}
+                    onChange={e => setCellDateEnd(e.target.value)}
+                    style={{ flex:1, padding:'8px 8px', border:'1.5px solid #E2E8F0', borderRadius:7, fontSize:'.78rem', fontFamily:'inherit', outline:'none', boxSizing:'border-box' }}
+                  />
+                </div>
+                {(cellDate || cellDateEnd) && (
+                  <div style={{ fontSize:'.7rem', color:'#2563EB', marginTop:4 }}>
+                    令和表記: {cellDate ? toReiwa(cellDate) : '?'}{' 〜 '}{cellDateEnd ? toReiwa(cellDateEnd) : '?'}
+                  </div>
+                )}
+              </>
+            )}
           </div>
 
           {/* Memo */}

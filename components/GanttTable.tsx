@@ -159,16 +159,18 @@ export function GanttTable({
             ? null  // 令和日付コンテンツは下のチップで表示
             : renderStatusBadge(cell.content)
         }
-        {/* 令和日付コンテンツ or cell_date をチップ表示 */}
-        {(reiwaDisplayDate || cell.cell_date) && (
+        {/* 令和日付コンテンツ or cell_date（期間含む）をチップ表示 */}
+        {(reiwaDisplayDate || cell.cell_date || cell.cell_date_end) && (
           <span style={{
             fontSize:'.6rem', lineHeight:1, fontWeight:700,
             borderRadius:3, padding:'1px 5px',
             color:      isPast ? '#94A3B8' : '#2563EB',
             background: isPast ? '#F8FAFC'  : '#EFF6FF',
             border:     `1px solid ${isPast ? '#E2E8F0' : '#BFDBFE'}`,
+            whiteSpace: 'nowrap',
           }}>
-            {reiwaDisplayDate || fmtDate(cell.cell_date!)}
+            {reiwaDisplayDate || (cell.cell_date ? fmtDate(cell.cell_date) : '')}
+            {cell.cell_date_end && `〜${fmtDate(cell.cell_date_end)}`}
           </span>
         )}
         {cell.assignee && (
