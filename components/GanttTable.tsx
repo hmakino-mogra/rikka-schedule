@@ -42,16 +42,22 @@ export function GanttTable({
   const [hoveredSectionId, setHoveredSectionId] = useState<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  // ── 今月の列が画面中央付近に来るよう初回スクロール ──
+  // ── 今月の列が画面中央に来るよう初回スクロール ──
   useEffect(() => {
-    if (!scrollRef.current) return
-    const idx = MONTHS.findIndex(m => m.id === CURRENT_MONTH_ID)
-    if (idx < 0) return
-    const TASK_COL = 248
-    const CELL_W = 86
-    const targetLeft = TASK_COL + CELL_W * idx
-    const containerWidth = scrollRef.current.clientWidth
-    scrollRef.current.scrollLeft = Math.max(0, targetLeft - containerWidth / 3)
+    const timer = setTimeout(() => {
+      if (!scrollRef.current) return
+      const idx = MONTHS.findIndex(m => m.id === CURRENT_MONTH_ID)
+      if (idx < 0) return
+      const TASK_COL = 248
+      const CELL_W = 86
+      // 今月セルの左端 X 座標
+      const targetLeft = TASK_COL + CELL_W * idx
+      const containerWidth = scrollRef.current.clientWidth
+      // 今月列が中央に来るよう scrollLeft を算出
+      const scrollTo = targetLeft - containerWidth / 2 + CELL_W / 2
+      scrollRef.current.scrollTo({ left: Math.max(0, scrollTo), behavior: 'smooth' })
+    }, 150)
+    return () => clearTimeout(timer)
   }, [])
 
   const handleTaskNameDoubleClick = (taskId: string, currentName: string) => {
