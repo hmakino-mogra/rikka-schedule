@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { SectionWithTasks, TaskWithCells, TaskCell, Milestone, MONTHS, CURRENT_MONTH_ID } from '@/lib/database.types'
 import { GanttTable } from './GanttTable'
@@ -38,6 +38,12 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
   } | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [currentFilter, setCurrentFilter] = useState('すべて')
+  const [toast, setToast] = useState<string | null>(null)
+
+  const showToast = useCallback((msg: string) => {
+    setToast(msg)
+    setTimeout(() => setToast(null), 2400)
+  }, [])
 
   // Subscribe to realtime changes
   useEffect(() => {
@@ -144,7 +150,9 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
       const matchesSearch = task.name.toLowerCase().includes(searchQuery.toLowerCase())
       const matchesFilter =
         currentFilter === 'すべて' ||
-        task.cells.some(c => c.content === currentFilter)
+        (currentFilter === '未定'
+          ? !task.cells.some(c => c.content === '済' || c.content === '予定')
+          : task.cells.some(c => c.content === currentFilter))
       return matchesSearch && matchesFilter
     })
   }))
@@ -178,14 +186,17 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
   const handleTaskAdded = (task: TaskWithCells) => {
     setSections(prev =>
       prev.map(sec =>
-        sec.id === task.section_id
-          ? {
-              ...sec,
-              tasks: [...sec.tasks, task]
-            }
-          : sec
+        sec.id === task.section_id ? { ...sec, tasks: [...sec.tasks, task] } : sec
       )
     )
+    showToast(`「${task.name}」を追加しました ✓`)
+  }
+
+  const handleTaskDeleted = (taskId: string) => {
+    setSections(prev =>
+      prev.map(sec => ({ ...sec, tasks: sec.tasks.filter(t => t.id !== taskId) }))
+    )
+    showToast('タスクを削除しました')
   }
 
   return (
@@ -308,14 +319,12 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
                 ...sec,
                 tasks: sec.tasks.map(task =>
                   task.id === editPanel.taskId
-                    ? {
-                        ...task,
-                        cells: task.cells.filter(c => c.id !== cell.id).concat(cell)
-                      }
+                    ? { ...task, cells: task.cells.filter(c => c.id !== cell.id).concat(cell) }
                     : task
                 )
               }))
             )
+            showToast('保存しました ✓')
             setEditPanel(null)
           }}
           onDeleted={(taskId, monthId) => {
@@ -329,8 +338,10 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
                 )
               }))
             )
+            showToast('セルを削除しました')
             setEditPanel(null)
           }}
+          onTaskDeleted={handleTaskDeleted}
         />
       )}
 
@@ -368,6 +379,13 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
             setMilestonePopover(null)
           }}
         />
+      )}
+
+      {/* Toast */}
+      {toast && (
+        <div style={{ position:'fixed', bottom:22, left:'50%', transform:'translateX(-50%)', background:'#0F172A', color:'white', padding:'8px 20px', borderRadius:20, fontSize:'.78rem', fontWeight:600, zIndex:400, boxShadow:'0 4px 20px rgba(0,0,0,.25)', whiteSpace:'nowrap' }}>
+          {toast}
+        </div>
       )}
 
       {/* Date Popover */}

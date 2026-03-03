@@ -13,9 +13,10 @@ interface Props {
   onClose: () => void
   onSaved: (cell: TaskCell) => void
   onDeleted: (taskId: string, monthId: number) => void
+  onTaskDeleted?: (taskId: string) => void
 }
 
-export function EditPanel({ taskId, monthId, taskName, secName, cell, onClose, onSaved, onDeleted }: Props) {
+export function EditPanel({ taskId, monthId, taskName, secName, cell, onClose, onSaved, onDeleted, onTaskDeleted }: Props) {
   const [status, setStatus] = useState(cell?.content || '')
   const [assignee, setAssignee] = useState(cell?.assignee || '')
   const [cellDate, setCellDate] = useState(cell?.cell_date || '')
@@ -26,23 +27,18 @@ export function EditPanel({ taskId, monthId, taskName, secName, cell, onClose, o
 
   const monthLabel = MONTHS.find(m => m.id === monthId)?.label || ''
 
-  useEffect(() => {
-    loadComments()
-  }, [])
+  useEffect(() => { loadComments() }, [])
 
-  // Escapeキーで閉じる
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
-  }, [])
+  }, [onClose])
 
   const loadComments = async () => {
     const { data } = await supabase
-      .from('comments')
-      .select('*')
-      .eq('task_id', taskId)
-      .eq('month_id', monthId)
+      .from('comments').select('*')
+      .eq('task_id', taskId).eq('month_id', monthId)
       .order('created_at', { ascending: true })
     if (data) setComments(data)
   }
@@ -50,38 +46,34 @@ export function EditPanel({ taskId, monthId, taskName, secName, cell, onClose, o
   const handleSave = async () => {
     setLoading(true)
     try {
-      const cellData = {
-        task_id: taskId,
-        month_id: monthId,
-        content: status || null,
-        assignee: assignee || null,
-        cell_date: cellDate || null,
-        memo: memo || null,
-      }
-
-      const { data } = await (supabase
-        .from('task_cells') as any)
-        .upsert(cellData, { onConflict: 'task_id, month_id' })
-        .select()
-        .single()
-
-      if (data) {
-        onSaved(data as TaskCell)
-      }
+      const { data } = await (supabase.from('task_cells') as any)
+        .upsert(
+          { task_id: taskId, month_id: monthId, content: status || null, assignee: assignee || null, cell_date: cellDate || null, memo: memo || null },
+          { onConflict: 'task_id, month_id' }
+        ).select().single()
+      if (data) onSaved(data as TaskCell)
     } finally {
       setLoading(false)
     }
   }
 
-  const handleDelete = async () => {
-    if (!cell || !confirm('このセルを削除してもよろしいですか？')) return
+  const handleDeleteCell = async () => {
+    if (!cell || !confirm('このセルのデータを削除しますか？')) return
     setLoading(true)
     try {
       await supabase.from('task_cells').delete().eq('id', cell.id)
       onDeleted(taskId, monthId)
-    } finally {
-      setLoading(false)
-    }
+    } finally { setLoading(false) }
+  }
+
+  const handleDeleteTask = async () => {
+    if (!confirm(`「${taskName}」を完全に削除しますか？\nこの操作は元に戻せません。`)) return
+    setLoading(true)
+    try {
+      await supabase.from('tasks').delete().eq('id', taskId)
+      if (onTaskDeleted) onTaskDeleted(taskId)
+      onClose()
+    } finally { setLoading(false) }
   }
 
   const handleAddComment = async () => {
@@ -89,189 +81,176 @@ export function EditPanel({ taskId, monthId, taskName, secName, cell, onClose, o
     setLoading(true)
     try {
       const { data } = await (supabase.from('comments') as any)
-        .insert({
-          task_id: taskId,
-          month_id: monthId,
-          text: newComment,
-          author: 'ユーザー'
-        })
-        .select()
-        .single()
-
-      if (data) {
-        setComments([...comments, data as Comment])
-        setNewComment('')
-      }
-    } finally {
-      setLoading(false)
-    }
+        .insert({ task_id: taskId, month_id: monthId, text: newComment.trim(), author: 'ユーザー' })
+        .select().single()
+      if (data) { setComments([...comments, data as Comment]); setNewComment('') }
+    } finally { setLoading(false) }
   }
 
-  const handleDeleteComment = async (commentId: string) => {
-    if (!confirm('コメントを削除してもよろしいですか？')) return
-    setLoading(true)
-    try {
-      await supabase.from('comments').delete().eq('id', commentId)
-      setComments(comments.filter(c => c.id !== commentId))
-    } finally {
-      setLoading(false)
-    }
-  }
+  const statusOptions = [
+    { value: '済',   label: '✓ 済',  bg: '#D1FAE5', color: '#059669', border: '#059669' },
+    { value: '予定', label: '● 予定', bg: '#FEF3C7', color: '#D97706', border: '#D97706' },
+    { value: '',     label: '— 未定', bg: '#F1F5F9', color: '#334155', border: '#CBD5E1' },
+  ]
 
   return (
     <>
-      {/* 背景オーバーレイ */}
+      {/* Backdrop */}
       <div
-        className="fixed"
-        style={{ top: 0, right: 0, bottom: 0, left: 0, zIndex: 150, background: 'rgba(0,0,0,0.4)' }}
+        style={{ position:'fixed', top:0, left:0, right:0, bottom:0, zIndex:150, background:'rgba(0,0,0,0.4)' }}
         onClick={onClose}
       />
-    <div className="fixed right-0 top-0 w-96 h-screen bg-white border-l border-slate-300 shadow-lg overflow-y-auto flex flex-col" style={{ zIndex: 200 }}>
-      {/* Header */}
-      <div className="sticky top-0 bg-[#0D2137] text-white px-6 py-4 border-b border-slate-300 flex items-center justify-between">
-        <div className="flex-1">
-          <div className="text-sm font-semibold">{taskName}</div>
-          <div className="text-xs opacity-75">
-            {secName} / {monthLabel}
+
+      {/* Panel */}
+      <div style={{ position:'fixed', right:0, top:0, width:410, height:'100vh', background:'white', boxShadow:'-8px 0 32px rgba(0,0,0,.12)', zIndex:200, display:'flex', flexDirection:'column', borderLeft:'1px solid #E2E8F0' }}>
+
+        {/* Header */}
+        <div style={{ padding:'16px 16px 12px', borderBottom:'1px solid #E2E8F0', flexShrink:0, background:'#0D2137' }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
+            <span style={{ fontSize:'.65rem', fontWeight:700, color:'rgba(255,255,255,.5)', textTransform:'uppercase', letterSpacing:'.05em' }}>{secName}</span>
+            <button onClick={onClose} style={{ width:26, height:26, borderRadius:6, background:'rgba(255,255,255,.12)', border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'.78rem', color:'rgba(255,255,255,.7)', fontFamily:'inherit' }}>✕</button>
           </div>
+          <div style={{ fontSize:'.98rem', fontWeight:700, color:'white', marginBottom:7, lineHeight:1.3 }}>{taskName}</div>
+          <span style={{ display:'inline-flex', alignItems:'center', gap:4, background:'rgba(37,99,235,.25)', color:'#93c5fd', borderRadius:6, padding:'3px 9px', fontSize:'.71rem', fontWeight:600 }}>📅 {monthLabel}</span>
         </div>
-        <button
-          onClick={onClose}
-          className="text-xl hover:opacity-75"
-        >
-          ✕
-        </button>
-      </div>
 
-      {/* Content */}
-      <div className="flex-1 p-6 space-y-6">
-        {/* Status */}
-        <div>
-          <label className="block text-xs font-semibold text-slate-600 mb-2">ステータス</label>
-          <div className="flex gap-2">
-            {['済', '予定', '未定'].map(s => (
-              <button
-                key={s}
-                onClick={() => setStatus(s)}
-                className={`px-3 py-2 text-xs font-medium rounded ${
-                  status === s
-                    ? s === '済'
-                      ? 'bg-green-100 text-green-700'
-                      : s === '予定'
-                      ? 'bg-amber-100 text-amber-700'
-                      : 'bg-slate-200 text-slate-700'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
-              >
-                {s === '済' ? '✓ 済' : s === '予定' ? '● 予定' : '未定'}
-              </button>
-            ))}
+        {/* Body */}
+        <div style={{ flex:1, overflowY:'auto', padding:16, display:'flex', flexDirection:'column', gap:16 }}>
+
+          {/* Status */}
+          <div>
+            <label style={{ display:'block', fontSize:'.65rem', fontWeight:700, color:'#64748B', textTransform:'uppercase', letterSpacing:'.06em', marginBottom:8 }}>ステータス</label>
+            <div style={{ display:'flex', gap:6 }}>
+              {statusOptions.map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => setStatus(opt.value)}
+                  style={{
+                    flex:1, padding:'9px 4px', borderRadius:7, cursor:'pointer', fontSize:'.76rem', fontWeight:700, textAlign:'center', fontFamily:'inherit',
+                    background: status === opt.value ? opt.bg : '#F1F5F9',
+                    color: status === opt.value ? opt.color : '#94A3B8',
+                    border: status === opt.value ? `2px solid ${opt.border}` : '2px solid #E2E8F0',
+                    transform: status === opt.value ? 'translateY(-1px)' : 'none',
+                    transition: 'all .12s',
+                  }}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
 
-        {/* Assignee */}
-        <div>
-          <label className="block text-xs font-semibold text-slate-600 mb-2">担当者</label>
-          <input
-            type="text"
-            value={assignee}
-            onChange={e => setAssignee(e.target.value)}
-            placeholder="名前を入力..."
-            className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-[#C9A84C]"
-          />
-        </div>
-
-        {/* Date */}
-        <div>
-          <label className="block text-xs font-semibold text-slate-600 mb-2">実行日</label>
-          <input
-            type="date"
-            value={cellDate}
-            onChange={e => setCellDate(e.target.value)}
-            className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-[#C9A84C]"
-          />
-          {cellDate && <div className="text-xs text-slate-500 mt-1">和暦: {toReiwa(cellDate)}</div>}
-        </div>
-
-        {/* Memo */}
-        <div>
-          <label className="block text-xs font-semibold text-slate-600 mb-2">メモ</label>
-          <textarea
-            value={memo}
-            onChange={e => setMemo(e.target.value)}
-            placeholder="メモを入力..."
-            className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-[#C9A84C] resize-none h-24"
-          />
-        </div>
-
-        {/* Comments */}
-        <div>
-          <label className="block text-xs font-semibold text-slate-600 mb-2">コメント</label>
-          <div className="space-y-2 mb-3 max-h-40 overflow-y-auto">
-            {comments.map(comment => (
-              <div key={comment.id} className="bg-slate-50 p-2 rounded text-xs">
-                <div className="flex items-start justify-between">
-                  <span className="font-medium text-slate-700">{comment.author}</span>
-                  <button
-                    onClick={() => handleDeleteComment(comment.id)}
-                    className="text-slate-400 hover:text-red-600 text-xs"
-                  >
-                    ✕
-                  </button>
-                </div>
-                <p className="text-slate-600 mt-1">{comment.text}</p>
-                <span className="text-slate-400 text-xs">
-                  {new Date(comment.created_at).toLocaleString('ja-JP')}
-                </span>
-              </div>
-            ))}
-          </div>
-          <div className="flex gap-2">
+          {/* Assignee */}
+          <div>
+            <label style={{ display:'block', fontSize:'.65rem', fontWeight:700, color:'#64748B', textTransform:'uppercase', letterSpacing:'.06em', marginBottom:6 }}>担当者</label>
             <input
               type="text"
-              value={newComment}
-              onChange={e => setNewComment(e.target.value)}
-              onKeyPress={e => e.key === 'Enter' && handleAddComment()}
-              placeholder="コメントを追加..."
-              className="flex-1 px-2 py-1.5 text-xs border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-[#C9A84C]"
+              value={assignee}
+              onChange={e => setAssignee(e.target.value)}
+              placeholder="担当者名…"
+              style={{ width:'100%', padding:'8px 11px', border:'1.5px solid #E2E8F0', borderRadius:7, fontSize:'.82rem', fontFamily:'inherit', outline:'none', boxSizing:'border-box' }}
             />
+          </div>
+
+          {/* Date */}
+          <div>
+            <label style={{ display:'block', fontSize:'.65rem', fontWeight:700, color:'#64748B', textTransform:'uppercase', letterSpacing:'.06em', marginBottom:6 }}>実行日</label>
+            <input
+              type="date"
+              value={cellDate}
+              onChange={e => setCellDate(e.target.value)}
+              style={{ width:'100%', padding:'8px 11px', border:'1.5px solid #E2E8F0', borderRadius:7, fontSize:'.82rem', fontFamily:'inherit', outline:'none', boxSizing:'border-box' }}
+            />
+            {cellDate && <div style={{ fontSize:'.7rem', color:'#2563EB', marginTop:4 }}>令和表記: {toReiwa(cellDate)}</div>}
+          </div>
+
+          {/* Memo */}
+          <div>
+            <label style={{ display:'block', fontSize:'.65rem', fontWeight:700, color:'#64748B', textTransform:'uppercase', letterSpacing:'.06em', marginBottom:6 }}>メモ</label>
+            <textarea
+              value={memo}
+              onChange={e => setMemo(e.target.value)}
+              placeholder="詳細・注意事項…"
+              style={{ width:'100%', padding:'8px 11px', border:'1.5px solid #E2E8F0', borderRadius:7, fontSize:'.82rem', fontFamily:'inherit', outline:'none', resize:'vertical', height:80, boxSizing:'border-box' }}
+            />
+          </div>
+
+          {/* Save / Delete Cell Buttons */}
+          <div style={{ display:'flex', gap:8 }}>
             <button
-              onClick={handleAddComment}
+              onClick={handleSave}
               disabled={loading}
-              className="px-3 py-1.5 text-xs bg-[#C9A84C] text-[#0D2137] rounded hover:opacity-90 disabled:opacity-50"
+              style={{ flex:1, padding:10, background:'#0D2137', color:'white', border:'none', borderRadius:8, fontSize:'.84rem', fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}
             >
-              追加
+              💾 保存
+            </button>
+            {cell && (
+              <button
+                onClick={handleDeleteCell}
+                disabled={loading}
+                style={{ padding:'10px 14px', background:'#FEE2E2', color:'#DC2626', border:'none', borderRadius:8, fontSize:'.84rem', fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}
+              >
+                🗑 セル削除
+              </button>
+            )}
+          </div>
+
+          {/* Comments */}
+          <div style={{ marginTop:8, paddingTop:14, borderTop:'1px solid #E2E8F0' }}>
+            <label style={{ display:'block', fontSize:'.65rem', fontWeight:700, color:'#64748B', textTransform:'uppercase', letterSpacing:'.06em', marginBottom:8 }}>💬 コメント</label>
+            <div style={{ display:'flex', flexDirection:'column', gap:6, marginBottom:10, maxHeight:160, overflowY:'auto' }}>
+              {comments.length === 0 ? (
+                <div style={{ fontSize:'.74rem', color:'#94A3B8', fontStyle:'italic' }}>まだコメントはありません</div>
+              ) : comments.map(comment => (
+                <div key={comment.id} style={{ background:'#F1F5F9', borderRadius:8, padding:'8px 10px' }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                    <span style={{ fontSize:'.72rem', fontWeight:700, color:'#334155' }}>{comment.author}</span>
+                    <button onClick={() => handleDeleteComment(comment.id)} style={{ background:'none', border:'none', cursor:'pointer', color:'#94A3B8', fontSize:'.7rem', fontFamily:'inherit' }}>✕</button>
+                  </div>
+                  <p style={{ fontSize:'.78rem', color:'#334155', margin:'4px 0 0' }}>{comment.text}</p>
+                  <span style={{ fontSize:'.64rem', color:'#94A3B8' }}>{new Date(comment.created_at).toLocaleString('ja-JP')}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{ display:'flex', gap:6 }}>
+              <input
+                type="text"
+                value={newComment}
+                onChange={e => setNewComment(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleAddComment()}
+                placeholder="コメントを追加…"
+                style={{ flex:1, padding:'7px 10px', border:'1.5px solid #E2E8F0', borderRadius:7, fontSize:'.78rem', fontFamily:'inherit', outline:'none' }}
+              />
+              <button
+                onClick={handleAddComment}
+                disabled={loading}
+                style={{ padding:'7px 12px', background:'#0D2137', color:'white', border:'none', borderRadius:7, fontSize:'.76rem', cursor:'pointer', fontFamily:'inherit' }}
+              >
+                送信
+              </button>
+            </div>
+          </div>
+
+          {/* Danger Zone: Delete Task */}
+          <div style={{ marginTop:8, paddingTop:14, borderTop:'1px solid #FEE2E2' }}>
+            <button
+              onClick={handleDeleteTask}
+              disabled={loading}
+              style={{ width:'100%', padding:'8px', background:'transparent', color:'#DC2626', border:'1px solid #FEE2E2', borderRadius:7, fontSize:'.75rem', cursor:'pointer', fontFamily:'inherit', fontWeight:600 }}
+            >
+              ⚠️ タスク自体を削除する
             </button>
           </div>
         </div>
       </div>
-
-      {/* Footer Buttons */}
-      <div className="sticky bottom-0 bg-slate-50 border-t border-slate-300 px-6 py-3 flex gap-2">
-        <button
-          onClick={handleSave}
-          disabled={loading}
-          className="flex-1 px-3 py-2 text-xs font-semibold bg-[#C9A84C] text-[#0D2137] rounded hover:opacity-90 disabled:opacity-50"
-        >
-          保存
-        </button>
-        {cell && (
-          <button
-            onClick={handleDelete}
-            disabled={loading}
-            className="flex-1 px-3 py-2 text-xs font-semibold bg-red-100 text-red-700 rounded hover:bg-red-200 disabled:opacity-50"
-          >
-            削除
-          </button>
-        )}
-        <button
-          onClick={onClose}
-          className="flex-1 px-3 py-2 text-xs font-semibold border border-slate-300 text-slate-600 rounded hover:bg-slate-100"
-        >
-          閉じる
-        </button>
-      </div>
-    </div>
     </>
   )
+
+  async function handleDeleteComment(commentId: string) {
+    setLoading(true)
+    try {
+      await supabase.from('comments').delete().eq('id', commentId)
+      setComments(comments.filter(c => c.id !== commentId))
+    } finally { setLoading(false) }
+  }
 }
