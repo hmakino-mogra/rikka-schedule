@@ -33,10 +33,17 @@ function getTaskAlert(task: TaskWithCells): AlertLevel {
     if (due < today) return 'overdue'
   }
 
-  // 過去月に「予定」が付いているが「済」になっていない → 遅延中
+  // 過去月に「予定」が付いているが「済」でも「実施済(past cell_date)」でもない → 遅延中
+  const today2 = new Date(); today2.setHours(0, 0, 0, 0)
   const hasDelayed = MONTHS
     .filter(m => m.id < CURRENT_MONTH_ID)
-    .some(m => task.cells.find(c => c.month_id === m.id)?.content === '予定')
+    .some(m => {
+      const c = task.cells.find(cell => cell.month_id === m.id)
+      if (!c) return false
+      // 過去の実行日が設定されていれば済みとみなす
+      if (c.cell_date && new Date(c.cell_date + 'T00:00:00') < today2) return false
+      return c.content === '予定'
+    })
   if (hasDelayed) return 'delayed'
 
   return 'ok'
@@ -109,29 +116,43 @@ export function GanttTable({
   }
 
   // ── セル内容（ステータス + 実行日 + 担当者）──
-  const renderCellContent = (cell: TaskCell) => (
-    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:2, padding:'2px 0' }}>
-      {renderStatusBadge(cell.content)}
-      {cell.cell_date && (
-        <span style={{
-          fontSize:'.6rem', color:'#2563EB', lineHeight:1, fontWeight:700,
-          background:'#EFF6FF', borderRadius:3, padding:'1px 5px',
-          border:'1px solid #BFDBFE',
-        }}>
-          {fmtDate(cell.cell_date)}
-        </span>
-      )}
-      {cell.assignee && (
-        <span style={{
-          fontSize:'.58rem', color:'#64748B', lineHeight:1,
-          maxWidth:74, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap',
-          background:'#F1F5F9', borderRadius:3, padding:'1px 4px',
-        }}>
-          👤 {cell.assignee}
-        </span>
-      )}
-    </div>
-  )
+  const renderCellContent = (cell: TaskCell) => {
+    const today = new Date(); today.setHours(0, 0, 0, 0)
+    const isPastDate = cell.cell_date
+      ? new Date(cell.cell_date + 'T00:00:00') < today
+      : false
+    // 実行日が過去 かつ まだ「済」でない → 自動的に済み扱いで表示
+    const autoCompleted = isPastDate && cell.content !== '済'
+    return (
+      <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:2, padding:'2px 0' }}>
+        {autoCompleted
+          ? <span style={{ display:'inline-flex', alignItems:'center', gap:3, padding:'2px 7px', borderRadius:11, fontSize:'.67rem', fontWeight:700, lineHeight:1, background:'#F1F5F9', color:'#94A3B8' }}>✓ 実施済</span>
+          : renderStatusBadge(cell.content)
+        }
+        {cell.cell_date && (
+          <span style={{
+            fontSize:'.6rem', lineHeight:1, fontWeight:700,
+            borderRadius:3, padding:'1px 5px',
+            // 過去日: グレー / 未来日: 青
+            color:      isPastDate ? '#94A3B8' : '#2563EB',
+            background: isPastDate ? '#F8FAFC'  : '#EFF6FF',
+            border:     `1px solid ${isPastDate ? '#E2E8F0' : '#BFDBFE'}`,
+          }}>
+            {fmtDate(cell.cell_date)}
+          </span>
+        )}
+        {cell.assignee && (
+          <span style={{
+            fontSize:'.58rem', color:'#64748B', lineHeight:1,
+            maxWidth:74, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap',
+            background:'#F1F5F9', borderRadius:3, padding:'1px 4px',
+          }}>
+            👤 {cell.assignee}
+          </span>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div
