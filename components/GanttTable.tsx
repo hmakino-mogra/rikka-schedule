@@ -17,6 +17,7 @@ interface Props {
   onAddTaskToSection: (sectionId: string) => void
   onSectionDelete: (sectionId: string) => void
   onSectionMove: (sectionId: string, direction: 'up' | 'down') => void
+  onTaskMove: (taskId: string, direction: 'up' | 'down') => void
 }
 
 // ── 令和日付文字列 (例: "R7.12.19") をパース ──────────────────
@@ -73,6 +74,7 @@ export function GanttTable({
   onAddTaskToSection,
   onSectionDelete,
   onSectionMove,
+  onTaskMove,
 }: Props) {
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null)
   const [editingTaskName, setEditingTaskName] = useState('')
@@ -354,18 +356,26 @@ export function GanttTable({
               </tr>
 
               {/* ── Task Rows ── */}
-              {section.is_open && section.tasks.map(task => {
+              {section.is_open && section.tasks.map((task, taskIdx) => {
                 const alert = getTaskAlert(task)
+                const isHovered = hoveredTaskId === task.id
+                const isFirstTask = taskIdx === 0
+                const isLastTask  = taskIdx === section.tasks.length - 1
+
                 // アラートに応じた色設定
-                const rowBg     = alert === 'overdue' ? 'rgba(239,68,68,.05)'   : alert === 'delayed' ? 'rgba(245,158,11,.05)' : 'white'
-                const barColor  = alert === 'overdue' ? '#EF4444'               : alert === 'delayed' ? '#F59E0B'              : (section.color || '#94a3b8')
+                const rowBg    = alert === 'overdue' ? 'rgba(239,68,68,.05)'  : alert === 'delayed' ? 'rgba(245,158,11,.05)' : 'white'
+                const barColor = alert === 'overdue' ? '#EF4444'              : alert === 'delayed' ? '#F59E0B'              : (section.color || '#94a3b8')
+                // ホバー時の行背景
+                const hoverTaskBg = alert === 'overdue' ? 'rgba(239,68,68,.11)' : alert === 'delayed' ? 'rgba(245,158,11,.11)' : '#EFF6FF'
 
                 return (
-                  <tr key={task.id}>
+                  <tr
+                    key={task.id}
+                    onMouseEnter={() => setHoveredTaskId(task.id)}
+                    onMouseLeave={() => setHoveredTaskId(null)}
+                  >
                     <td
-                      style={{ position:'sticky', left:0, zIndex:7, background: rowBg, borderBottom:'1px solid #E2E8F0', minWidth:248, maxWidth:248, borderRight:'1px solid #E2E8F0', padding:0, height:40 }}
-                      onMouseEnter={() => setHoveredTaskId(task.id)}
-                      onMouseLeave={() => setHoveredTaskId(null)}
+                      style={{ position:'sticky', left:0, zIndex:7, background: isHovered ? hoverTaskBg : rowBg, borderBottom:'1px solid #E2E8F0', minWidth:248, maxWidth:248, borderRight:'1px solid #E2E8F0', padding:0, height:40, transition:'background .1s' }}
                     >
                       <div style={{ display:'flex', alignItems:'stretch', height:'100%' }}>
                         {/* 左のカラーバー（アラート時は赤/橙） */}
@@ -382,7 +392,7 @@ export function GanttTable({
                               style={{ fontSize:'.78rem', color:'#334155', border:'none', background:'white', outline:'2px solid #2B5A8A', borderRadius:3, width:'100%', padding:'1px 3px', fontFamily:'inherit' }}
                             />
                           ) : (
-                            <div style={{ display:'flex', alignItems:'center', gap:3, minWidth:0 }}>
+                            <div style={{ display:'flex', alignItems:'center', gap:2, minWidth:0 }}>
                               <span
                                 style={{ fontSize:'.78rem', color:'#334155', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', flex:1 }}
                                 title={task.name}
@@ -390,12 +400,26 @@ export function GanttTable({
                               >
                                 {task.name}
                               </span>
-                              {hoveredTaskId === task.id && (
-                                <button
-                                  onClick={e => { e.stopPropagation(); handleTaskNameDoubleClick(task.id, task.name) }}
-                                  title="タスク名を編集"
-                                  style={{ flexShrink:0, padding:'1px 4px', background:'white', border:'1px solid #CBD5E1', borderRadius:3, cursor:'pointer', color:'#64748B', fontSize:'.62rem', fontFamily:'inherit', lineHeight:1 }}
-                                >✏</button>
+                              {isHovered && (
+                                <>
+                                  <button
+                                    onClick={e => { e.stopPropagation(); onTaskMove(task.id, 'up') }}
+                                    disabled={isFirstTask}
+                                    title="上に移動"
+                                    style={{ flexShrink:0, padding:'1px 4px', background:'white', border:'1px solid #CBD5E1', borderRadius:3, cursor: isFirstTask ? 'default' : 'pointer', color: isFirstTask ? '#CBD5E1' : '#64748B', fontSize:'.62rem', fontFamily:'inherit', lineHeight:1 }}
+                                  >↑</button>
+                                  <button
+                                    onClick={e => { e.stopPropagation(); onTaskMove(task.id, 'down') }}
+                                    disabled={isLastTask}
+                                    title="下に移動"
+                                    style={{ flexShrink:0, padding:'1px 4px', background:'white', border:'1px solid #CBD5E1', borderRadius:3, cursor: isLastTask ? 'default' : 'pointer', color: isLastTask ? '#CBD5E1' : '#64748B', fontSize:'.62rem', fontFamily:'inherit', lineHeight:1 }}
+                                  >↓</button>
+                                  <button
+                                    onClick={e => { e.stopPropagation(); handleTaskNameDoubleClick(task.id, task.name) }}
+                                    title="タスク名を編集"
+                                    style={{ flexShrink:0, padding:'1px 4px', background:'white', border:'1px solid #CBD5E1', borderRadius:3, cursor:'pointer', color:'#64748B', fontSize:'.62rem', fontFamily:'inherit', lineHeight:1 }}
+                                  >✏</button>
+                                </>
                               )}
                             </div>
                           )}
@@ -446,6 +470,13 @@ export function GanttTable({
                           return 'rgba(245,158,11,.08)'
                         return 'white'
                       })()
+                      // ホバー時の月セル背景
+                      const monthHoverBg = isMainEvent
+                        ? 'rgba(220,38,38,.09)'
+                        : isCurrentMonth
+                          ? 'rgba(37,99,235,.13)'
+                          : alert === 'overdue' ? 'rgba(239,68,68,.09)' : alert === 'delayed' ? 'rgba(245,158,11,.09)' : '#EFF6FF'
+
                       return (
                         <td key={month.id}
                           onClick={() => onCellClick(task.id, month.id, task.name, section.name, cell || null, section.id)}
@@ -453,8 +484,9 @@ export function GanttTable({
                             height:40, borderBottom:'1px solid #E2E8F0',
                             textAlign:'center', cursor:'pointer', verticalAlign:'middle',
                             minWidth:86, position:'relative',
-                            background: cellAlertBg,
-                            borderLeft:'1px solid #CBD5E1'
+                            background: isHovered ? monthHoverBg : cellAlertBg,
+                            borderLeft:'1px solid #CBD5E1',
+                            transition:'background .1s',
                           }}
                         >
                           {cell && renderCellContent(cell)}

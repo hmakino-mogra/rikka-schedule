@@ -211,6 +211,24 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
     ])
   }
 
+  // ── タスクの上下並び替え ──
+  const handleTaskMove = async (taskId: string, direction: 'up' | 'down') => {
+    setSections(prev => prev.map(sec => {
+      const idx = sec.tasks.findIndex(t => t.id === taskId)
+      if (idx < 0) return sec
+      if (direction === 'up' && idx <= 0) return sec
+      if (direction === 'down' && idx >= sec.tasks.length - 1) return sec
+      const swapIdx = direction === 'up' ? idx - 1 : idx + 1
+      const newTasks = [...sec.tasks]
+      ;[newTasks[idx], newTasks[swapIdx]] = [newTasks[swapIdx], newTasks[idx]]
+      Promise.all([
+        (supabase.from('tasks') as any).update({ sort_order: swapIdx }).eq('id', sec.tasks[idx].id),
+        (supabase.from('tasks') as any).update({ sort_order: idx }).eq('id', sec.tasks[swapIdx].id),
+      ])
+      return { ...sec, tasks: newTasks }
+    }))
+  }
+
   // ── タスクのセクション間移動 ──
   const handleTaskSectionChange = (taskId: string, newSectionId: string) => {
     setSections(prev => {
@@ -365,6 +383,7 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
         onAddTaskToSection={handleAddTaskToSection}
         onSectionDelete={handleSectionDelete}
         onSectionMove={handleSectionMove}
+        onTaskMove={handleTaskMove}
       />
 
       {/* Edit Panel */}
