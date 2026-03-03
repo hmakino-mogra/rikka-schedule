@@ -19,9 +19,7 @@ export function DatePopover({ taskId, currentDate, anchor, onClose, onSaved }: P
   const handleSave = async () => {
     setLoading(true)
     try {
-      const updateData: Record<string, any> = { due_date: date || null }
-      await (supabase.from('tasks') as any).update(updateData).eq('id', taskId)
-
+      await (supabase.from('tasks') as any).update({ due_date: date || null }).eq('id', taskId)
       onSaved(taskId, date || null)
     } finally {
       setLoading(false)
@@ -31,9 +29,7 @@ export function DatePopover({ taskId, currentDate, anchor, onClose, onSaved }: P
   const handleClear = async () => {
     setLoading(true)
     try {
-      const updateData: Record<string, any> = { due_date: null }
-      await (supabase.from('tasks') as any).update(updateData).eq('id', taskId)
-
+      await (supabase.from('tasks') as any).update({ due_date: null }).eq('id', taskId)
       setDate('')
       onSaved(taskId, null)
     } finally {
@@ -41,29 +37,48 @@ export function DatePopover({ taskId, currentDate, anchor, onClose, onSaved }: P
     }
   }
 
-  const top = anchor.bottom + 8
-  const left = Math.min(anchor.left, window.innerWidth - 280)
+  // ── 画面内に収まるよう位置を計算 ──
+  const popoverW = 260
+  const popoverH = 200
+  const margin = 8
+
+  const rawTop = anchor.bottom + margin
+  const top = rawTop + popoverH > window.innerHeight
+    ? Math.max(margin, anchor.top - popoverH - margin)
+    : rawTop
+  const left = Math.max(margin, Math.min(anchor.left, window.innerWidth - popoverW - margin))
 
   return (
     <>
+      {/* Backdrop */}
       <div
-        className="fixed"
-        style={{ top: 0, right: 0, bottom: 0, left: 0, zIndex: 150 }}
+        style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 250 }}
         onClick={onClose}
       />
-      <div
-        className="fixed bg-white rounded-lg shadow-lg border border-slate-200 w-72 p-4 space-y-3"
-        style={{ zIndex: 200, top: `${top}px`, left: `${left}px` }}
-      >
+
+      {/* Popover */}
+      <div style={{
+        position: 'fixed',
+        top,
+        left,
+        width: popoverW,
+        background: 'white',
+        borderRadius: 10,
+        boxShadow: '0 8px 32px rgba(0,0,0,.18)',
+        border: '1px solid #E2E8F0',
+        zIndex: 300,
+        padding: 14,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 10,
+      }}>
         {/* Header */}
-        <div className="flex items-center justify-between pb-2 border-b border-slate-200">
-          <h3 className="font-semibold text-slate-700">期限日</h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 8, borderBottom: '1px solid #E2E8F0' }}>
+          <span style={{ fontSize: '.78rem', fontWeight: 700, color: '#334155' }}>📅 期限日</span>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600"
-          >
-            ✕
-          </button>
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', fontSize: '.8rem', padding: '2px 4px', borderRadius: 4, fontFamily: 'inherit' }}
+          >✕</button>
         </div>
 
         {/* Date Input */}
@@ -72,34 +87,36 @@ export function DatePopover({ taskId, currentDate, anchor, onClose, onSaved }: P
             type="date"
             value={date}
             onChange={e => setDate(e.target.value)}
-            className="w-full px-3 py-2 border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-[#C9A84C]"
+            style={{ width: '100%', padding: '7px 10px', border: '1.5px solid #E2E8F0', borderRadius: 7, fontSize: '.84rem', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+            onFocus={e => (e.currentTarget.style.borderColor = '#C9A84C')}
+            onBlur={e => (e.currentTarget.style.borderColor = '#E2E8F0')}
           />
           {date && (
-            <div className="text-xs text-slate-500 mt-2">
-              和暦: {toReiwa(date)}
+            <div style={{ fontSize: '.72rem', color: '#2563EB', marginTop: 4 }}>
+              令和: {toReiwa(date)}
             </div>
           )}
         </div>
 
         {/* Buttons */}
-        <div className="flex gap-2 pt-3 border-t border-slate-200">
+        <div style={{ display: 'flex', gap: 6 }}>
           <button
             onClick={handleSave}
             disabled={loading}
-            className="flex-1 px-3 py-1.5 text-xs font-semibold bg-[#C9A84C] text-[#0D2137] rounded hover:opacity-90 disabled:opacity-50"
+            style={{ flex: 1, padding: '7px 4px', background: '#C9A84C', color: '#0D2137', border: 'none', borderRadius: 7, fontSize: '.78rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
           >
             OK
           </button>
           <button
             onClick={handleClear}
             disabled={loading}
-            className="flex-1 px-3 py-1.5 text-xs font-semibold bg-slate-100 text-slate-700 rounded hover:bg-slate-200 disabled:opacity-50"
+            style={{ flex: 1, padding: '7px 4px', background: '#F1F5F9', color: '#334155', border: 'none', borderRadius: 7, fontSize: '.78rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
           >
             クリア
           </button>
           <button
             onClick={onClose}
-            className="px-3 py-1.5 text-xs font-semibold border border-slate-300 text-slate-600 rounded hover:bg-slate-50"
+            style={{ padding: '7px 10px', background: 'white', color: '#64748B', border: '1px solid #E2E8F0', borderRadius: 7, fontSize: '.78rem', cursor: 'pointer', fontFamily: 'inherit' }}
           >
             ✕
           </button>

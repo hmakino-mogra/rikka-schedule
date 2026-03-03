@@ -103,7 +103,16 @@ export const MONTHS = [
   { id: 13, label: 'R8.10', year: 2026, month: 10, isMain: true },
 ] as const
 
-export const CURRENT_MONTH_ID = 5  // R8.2 = 2026年2月
+function computeCurrentMonthId(): number {
+  const now = new Date()
+  const y = now.getFullYear()
+  const mo = now.getMonth() + 1
+  const found = (MONTHS as readonly { id: number; year: number; month: number }[]).find(
+    m => m.year === y && m.month === mo
+  )
+  return found?.id ?? 5
+}
+export const CURRENT_MONTH_ID = computeCurrentMonthId()
 
 export function toReiwa(iso: string): string {
   if (!iso) return ''

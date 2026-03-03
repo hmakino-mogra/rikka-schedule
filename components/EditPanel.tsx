@@ -2,21 +2,27 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { TaskCell, Comment, toReiwa, MONTHS } from '@/lib/database.types'
+import { TaskCell, Comment, SectionWithTasks, toReiwa, MONTHS } from '@/lib/database.types'
 
 interface Props {
   taskId: string
   monthId: number
   taskName: string
   secName: string
+  sectionId: string
   cell: TaskCell | null
+  sections: SectionWithTasks[]
   onClose: () => void
   onSaved: (cell: TaskCell) => void
   onDeleted: (taskId: string, monthId: number) => void
   onTaskDeleted?: (taskId: string) => void
+  onSectionChange?: (taskId: string, newSectionId: string) => void
 }
 
-export function EditPanel({ taskId, monthId, taskName, secName, cell, onClose, onSaved, onDeleted, onTaskDeleted }: Props) {
+export function EditPanel({
+  taskId, monthId, taskName, secName, sectionId,
+  cell, sections, onClose, onSaved, onDeleted, onTaskDeleted, onSectionChange
+}: Props) {
   const [status, setStatus] = useState(cell?.content || '')
   const [assignee, setAssignee] = useState(cell?.assignee || '')
   const [cellDate, setCellDate] = useState(cell?.cell_date || '')
@@ -24,6 +30,7 @@ export function EditPanel({ taskId, monthId, taskName, secName, cell, onClose, o
   const [comments, setComments] = useState<Comment[]>([])
   const [newComment, setNewComment] = useState('')
   const [loading, setLoading] = useState(false)
+  const [selectedSectionId, setSelectedSectionId] = useState(sectionId)
 
   const monthLabel = MONTHS.find(m => m.id === monthId)?.label || ''
 
@@ -81,9 +88,26 @@ export function EditPanel({ taskId, monthId, taskName, secName, cell, onClose, o
     setLoading(true)
     try {
       const { data } = await (supabase.from('comments') as any)
-        .insert({ task_id: taskId, month_id: monthId, text: newComment.trim(), author: 'ユーザー' })
+        .insert({ task_id: taskId, month_id: monthId, text: newComment.trim(), author: '自分' })
         .select().single()
       if (data) { setComments([...comments, data as Comment]); setNewComment('') }
+    } finally { setLoading(false) }
+  }
+
+  const handleDeleteComment = async (commentId: string) => {
+    setLoading(true)
+    try {
+      await supabase.from('comments').delete().eq('id', commentId)
+      setComments(comments.filter(c => c.id !== commentId))
+    } finally { setLoading(false) }
+  }
+
+  const handleMoveSection = async () => {
+    if (selectedSectionId === sectionId || !onSectionChange) return
+    setLoading(true)
+    try {
+      await (supabase.from('tasks') as any).update({ section_id: selectedSectionId }).eq('id', taskId)
+      onSectionChange(taskId, selectedSectionId)
     } finally { setLoading(false) }
   }
 
@@ -92,6 +116,8 @@ export function EditPanel({ taskId, monthId, taskName, secName, cell, onClose, o
     { value: '予定', label: '● 予定', bg: '#FEF3C7', color: '#D97706', border: '#D97706' },
     { value: '',     label: '— 未定', bg: '#F1F5F9', color: '#334155', border: '#CBD5E1' },
   ]
+
+  const sectionChanged = selectedSectionId !== sectionId
 
   return (
     <>
@@ -102,7 +128,7 @@ export function EditPanel({ taskId, monthId, taskName, secName, cell, onClose, o
       />
 
       {/* Panel */}
-      <div style={{ position:'fixed', right:0, top:0, width:410, height:'100vh', background:'white', boxShadow:'-8px 0 32px rgba(0,0,0,.12)', zIndex:200, display:'flex', flexDirection:'column', borderLeft:'1px solid #E2E8F0' }}>
+      <div style={{ position:'fixed', right:0, top:0, width:420, height:'100vh', background:'white', boxShadow:'-8px 0 32px rgba(0,0,0,.12)', zIndex:200, display:'flex', flexDirection:'column', borderLeft:'1px solid #E2E8F0' }}>
 
         {/* Header */}
         <div style={{ padding:'16px 16px 12px', borderBottom:'1px solid #E2E8F0', flexShrink:0, background:'#0D2137' }}>
@@ -115,7 +141,7 @@ export function EditPanel({ taskId, monthId, taskName, secName, cell, onClose, o
         </div>
 
         {/* Body */}
-        <div style={{ flex:1, overflowY:'auto', padding:16, display:'flex', flexDirection:'column', gap:16 }}>
+        <div style={{ flex:1, overflowY:'auto', padding:16, display:'flex', flexDirection:'column', gap:14 }}>
 
           {/* Status */}
           <div>
@@ -171,7 +197,7 @@ export function EditPanel({ taskId, monthId, taskName, secName, cell, onClose, o
               value={memo}
               onChange={e => setMemo(e.target.value)}
               placeholder="詳細・注意事項…"
-              style={{ width:'100%', padding:'8px 11px', border:'1.5px solid #E2E8F0', borderRadius:7, fontSize:'.82rem', fontFamily:'inherit', outline:'none', resize:'vertical', height:80, boxSizing:'border-box' }}
+              style={{ width:'100%', padding:'8px 11px', border:'1.5px solid #E2E8F0', borderRadius:7, fontSize:'.82rem', fontFamily:'inherit', outline:'none', resize:'vertical', height:72, boxSizing:'border-box' }}
             />
           </div>
 
@@ -195,14 +221,45 @@ export function EditPanel({ taskId, monthId, taskName, secName, cell, onClose, o
             )}
           </div>
 
+          {/* ── Section Move ── */}
+          <div style={{ paddingTop:12, borderTop:'1px solid #E2E8F0' }}>
+            <label style={{ display:'block', fontSize:'.65rem', fontWeight:700, color:'#64748B', textTransform:'uppercase', letterSpacing:'.06em', marginBottom:6 }}>セクションを変更</label>
+            <div style={{ display:'flex', gap:8 }}>
+              <select
+                value={selectedSectionId}
+                onChange={e => setSelectedSectionId(e.target.value)}
+                style={{ flex:1, padding:'8px 10px', border:`1.5px solid ${sectionChanged ? '#C9A84C' : '#E2E8F0'}`, borderRadius:7, fontSize:'.82rem', fontFamily:'inherit', outline:'none', background:'white', boxSizing:'border-box' }}
+              >
+                {sections.map(sec => (
+                  <option key={sec.id} value={sec.id}>{sec.name}</option>
+                ))}
+              </select>
+              <button
+                onClick={handleMoveSection}
+                disabled={!sectionChanged || loading}
+                style={{
+                  padding:'8px 14px', borderRadius:7, fontSize:'.78rem', fontWeight:700, fontFamily:'inherit', cursor: sectionChanged ? 'pointer' : 'default', border:'none',
+                  background: sectionChanged ? '#C9A84C' : '#E2E8F0',
+                  color: sectionChanged ? '#0D2137' : '#94A3B8',
+                  transition:'all .15s',
+                }}
+              >
+                移動
+              </button>
+            </div>
+            {sectionChanged && (
+              <div style={{ fontSize:'.72rem', color:'#C9A84C', marginTop:4 }}>「移動」ボタンで確定します</div>
+            )}
+          </div>
+
           {/* Comments */}
-          <div style={{ marginTop:8, paddingTop:14, borderTop:'1px solid #E2E8F0' }}>
+          <div style={{ paddingTop:12, borderTop:'1px solid #E2E8F0' }}>
             <label style={{ display:'block', fontSize:'.65rem', fontWeight:700, color:'#64748B', textTransform:'uppercase', letterSpacing:'.06em', marginBottom:8 }}>💬 コメント</label>
             <div style={{ display:'flex', flexDirection:'column', gap:6, marginBottom:10, maxHeight:160, overflowY:'auto' }}>
               {comments.length === 0 ? (
                 <div style={{ fontSize:'.74rem', color:'#94A3B8', fontStyle:'italic' }}>まだコメントはありません</div>
               ) : comments.map(comment => (
-                <div key={comment.id} style={{ background:'#F1F5F9', borderRadius:8, padding:'8px 10px' }}>
+                <div key={comment.id} style={{ background:'#F8FAFC', border:'1px solid #E2E8F0', borderRadius:8, padding:'8px 10px' }}>
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                     <span style={{ fontSize:'.72rem', fontWeight:700, color:'#334155' }}>{comment.author}</span>
                     <button onClick={() => handleDeleteComment(comment.id)} style={{ background:'none', border:'none', cursor:'pointer', color:'#94A3B8', fontSize:'.7rem', fontFamily:'inherit' }}>✕</button>
@@ -232,7 +289,7 @@ export function EditPanel({ taskId, monthId, taskName, secName, cell, onClose, o
           </div>
 
           {/* Danger Zone: Delete Task */}
-          <div style={{ marginTop:8, paddingTop:14, borderTop:'1px solid #FEE2E2' }}>
+          <div style={{ paddingTop:12, borderTop:'1px solid #FEE2E2' }}>
             <button
               onClick={handleDeleteTask}
               disabled={loading}
@@ -245,12 +302,4 @@ export function EditPanel({ taskId, monthId, taskName, secName, cell, onClose, o
       </div>
     </>
   )
-
-  async function handleDeleteComment(commentId: string) {
-    setLoading(true)
-    try {
-      await supabase.from('comments').delete().eq('id', commentId)
-      setComments(comments.filter(c => c.id !== commentId))
-    } finally { setLoading(false) }
-  }
 }

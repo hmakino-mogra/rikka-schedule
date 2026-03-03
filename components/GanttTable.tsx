@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { SectionWithTasks, TaskCell, Milestone, MONTHS, CURRENT_MONTH_ID, fmtDate } from '@/lib/database.types'
 
 interface Props {
@@ -8,13 +8,15 @@ interface Props {
   milestones: Milestone[]
   currentFilter: string
   searchQuery: string
-  onCellClick: (taskId: string, monthId: number, taskName: string, secName: string, cell: TaskCell | null) => void
+  onCellClick: (taskId: string, monthId: number, taskName: string, secName: string, cell: TaskCell | null, sectionId: string) => void
   onMilestoneClick: (monthId: number, anchor: DOMRect) => void
   onDateChipClick: (taskId: string, dueDate: string | null, anchor: DOMRect) => void
   onTaskNameEdit: (taskId: string, newName: string) => void
   onSectionNameEdit: (sectionId: string, newName: string) => void
   onToggleSection: (sectionId: string) => void
   onAddTaskToSection: (sectionId: string) => void
+  onSectionDelete: (sectionId: string) => void
+  onSectionMove: (sectionId: string, direction: 'up' | 'down') => void
 }
 
 export function GanttTable({
@@ -29,11 +31,28 @@ export function GanttTable({
   onSectionNameEdit,
   onToggleSection,
   onAddTaskToSection,
+  onSectionDelete,
+  onSectionMove,
 }: Props) {
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null)
   const [editingTaskName, setEditingTaskName] = useState('')
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null)
   const [editingSectionName, setEditingSectionName] = useState('')
+  const [hoveredTaskId, setHoveredTaskId] = useState<string | null>(null)
+  const [hoveredSectionId, setHoveredSectionId] = useState<string | null>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
+
+  // ── 今月の列が画面中央付近に来るよう初回スクロール ──
+  useEffect(() => {
+    if (!scrollRef.current) return
+    const idx = MONTHS.findIndex(m => m.id === CURRENT_MONTH_ID)
+    if (idx < 0) return
+    const TASK_COL = 248
+    const CELL_W = 86
+    const targetLeft = TASK_COL + CELL_W * idx
+    const containerWidth = scrollRef.current.clientWidth
+    scrollRef.current.scrollLeft = Math.max(0, targetLeft - containerWidth / 3)
+  }, [])
 
   const handleTaskNameDoubleClick = (taskId: string, currentName: string) => {
     setEditingTaskId(taskId)
@@ -62,8 +81,11 @@ export function GanttTable({
   }
 
   return (
-    <div style={{ height:'calc(100vh - 94px)', overflow:'auto', position:'relative', zIndex:0 }}
-      className="custom-scroll">
+    <div
+      ref={scrollRef}
+      style={{ height:'calc(100vh - 94px)', overflow:'auto', position:'relative', zIndex:0 }}
+      className="custom-scroll"
+    >
       <table style={{ borderCollapse:'collapse', width:'max-content', minWidth:'100%' }}>
         <thead>
           {/* ── Month header row ── */}
@@ -117,21 +139,27 @@ export function GanttTable({
           </tr>
         </thead>
 
-        {sections.map(section => {
+        {sections.map((section, secIdx) => {
           const doneCnt = section.tasks.filter(t => t.cells.some(c => c.content === '済')).length
           const totalCnt = section.tasks.length
           const pct = totalCnt > 0 ? Math.round(doneCnt / totalCnt * 100) : 0
           const isSub = section.is_sub
           const secBg = isSub ? '#f0ebff' : '#e4eaf5'
           const secBorder = isSub ? '1px solid #e9d5ff' : '2px solid #E2E8F0'
+          const isSecHovered = hoveredSectionId === section.id
 
           return (
             <tbody key={section.id}>
               {/* ── Section Header ── */}
               <tr>
-                <td style={{ position:'sticky', left:0, zIndex:8, background: secBg, borderTop: secBorder, borderBottom:'1px solid #E2E8F0', height:32, minWidth:248, maxWidth:248, padding:0 }}>
-                  <div style={{ display:'flex', alignItems:'center', height:'100%', gap:7, padding:'0 10px 0 14px' }}>
+                <td
+                  style={{ position:'sticky', left:0, zIndex:8, background: secBg, borderTop: secBorder, borderBottom:'1px solid #E2E8F0', height:34, minWidth:248, maxWidth:248, padding:0 }}
+                  onMouseEnter={() => setHoveredSectionId(section.id)}
+                  onMouseLeave={() => setHoveredSectionId(null)}
+                >
+                  <div style={{ display:'flex', alignItems:'center', height:'100%', gap:5, padding:'0 6px 0 12px' }}>
                     <div style={{ width:7, height:7, borderRadius:'50%', flexShrink:0, background: section.color || '#94a3b8' }}></div>
+
                     {editingSectionId === section.id ? (
                       <input
                         autoFocus
@@ -139,28 +167,55 @@ export function GanttTable({
                         onChange={e => setEditingSectionName(e.target.value)}
                         onBlur={() => handleSectionNameSave(section.id)}
                         onKeyDown={e => { if (e.key === 'Enter') handleSectionNameSave(section.id); if (e.key === 'Escape') setEditingSectionId(null) }}
-                        style={{ fontSize:'.7rem', fontWeight:700, border:'none', background:'white', borderRadius:3, padding:'2px 4px', outline:'2px solid #2B5A8A', fontFamily:'inherit', width:160 }}
+                        style={{ fontSize:'.7rem', fontWeight:700, border:'none', background:'white', borderRadius:3, padding:'2px 4px', outline:'2px solid #2B5A8A', fontFamily:'inherit', width:110 }}
                       />
                     ) : (
                       <span
                         onDoubleClick={() => handleSectionNameDoubleClick(section.id, section.name)}
-                        style={{ fontSize:'.7rem', fontWeight:700, color:'#334155', cursor:'pointer', padding:'2px 4px', borderRadius:3 }}
+                        title="ダブルクリックで名前を編集"
+                        style={{ fontSize:'.7rem', fontWeight:700, color:'#334155', cursor:'pointer', padding:'2px 3px', borderRadius:3, maxWidth:90, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}
                       >
                         {section.name}
                       </span>
                     )}
-                    <span style={{ fontSize:'.63rem', color:'#64748B', background:'#E2E8F0', borderRadius:10, padding:'1px 6px', whiteSpace:'nowrap' }}>{totalCnt}タスク</span>
-                    <div style={{ flex:1, margin:'0 8px' }}>
-                      <div style={{ height:4, background:'#E2E8F0', borderRadius:2, overflow:'hidden' }}>
+
+                    <span style={{ fontSize:'.6rem', color:'#64748B', background:'#E2E8F0', borderRadius:10, padding:'1px 5px', whiteSpace:'nowrap', flexShrink:0 }}>{totalCnt}</span>
+
+                    <div style={{ flex:1, margin:'0 3px', minWidth:30 }}>
+                      <div style={{ height:3, background:'#E2E8F0', borderRadius:2, overflow:'hidden' }}>
                         <div style={{ height:'100%', borderRadius:2, transition:'width .4s', background: section.color || '#3B82F6', width:`${pct}%` }}></div>
                       </div>
-                      <div style={{ fontSize:'.6rem', color:'#64748B', marginTop:1 }}>済 {doneCnt}/{totalCnt} ({pct}%)</div>
+                      <div style={{ fontSize:'.55rem', color:'#94A3B8', marginTop:1 }}>{pct}%</div>
                     </div>
+
+                    {/* ── Hover: section action buttons ── */}
+                    {isSecHovered && (
+                      <div style={{ display:'flex', gap:2, flexShrink:0 }}>
+                        <button
+                          onClick={e => { e.stopPropagation(); onSectionMove(section.id, 'up') }}
+                          disabled={secIdx === 0}
+                          title="上に移動"
+                          style={{ padding:'2px 5px', background:'white', border:'1px solid #CBD5E1', borderRadius:3, cursor: secIdx === 0 ? 'default' : 'pointer', color: secIdx === 0 ? '#CBD5E1' : '#64748B', fontSize:'.72rem', fontFamily:'inherit', lineHeight:1 }}
+                        >↑</button>
+                        <button
+                          onClick={e => { e.stopPropagation(); onSectionMove(section.id, 'down') }}
+                          disabled={secIdx === sections.length - 1}
+                          title="下に移動"
+                          style={{ padding:'2px 5px', background:'white', border:'1px solid #CBD5E1', borderRadius:3, cursor: secIdx === sections.length - 1 ? 'default' : 'pointer', color: secIdx === sections.length - 1 ? '#CBD5E1' : '#64748B', fontSize:'.72rem', fontFamily:'inherit', lineHeight:1 }}
+                        >↓</button>
+                        <button
+                          onClick={e => { e.stopPropagation(); onSectionDelete(section.id) }}
+                          title="セクションを削除"
+                          style={{ padding:'2px 5px', background:'#FEF2F2', border:'1px solid #FCA5A5', borderRadius:3, cursor:'pointer', color:'#EF4444', fontSize:'.65rem', fontFamily:'inherit', lineHeight:1 }}
+                        >🗑</button>
+                      </div>
+                    )}
+
                     <button
                       onClick={() => onToggleSection(section.id)}
-                      style={{ fontSize:'.68rem', color:'#64748B', background:'none', border:'none', cursor:'pointer', padding:'3px 7px', borderRadius:4, fontFamily:'inherit', whiteSpace:'nowrap', flexShrink:0 }}
+                      style={{ fontSize:'.65rem', color:'#64748B', background:'none', border:'none', cursor:'pointer', padding:'3px 4px', borderRadius:4, fontFamily:'inherit', whiteSpace:'nowrap', flexShrink:0 }}
                     >
-                      {section.is_open ? '▼ 折りたたむ' : '▶ 展開'}
+                      {section.is_open ? '▼' : '▶'}
                     </button>
                   </div>
                 </td>
@@ -169,7 +224,7 @@ export function GanttTable({
                   const isMainEvent = (month as any).isMain
                   return (
                     <td key={month.id} style={{
-                      height:32,
+                      height:34,
                       background: isMainEvent ? 'rgba(220,38,38,.04)' : isCurrentMonth ? 'rgba(37,99,235,.04)' : secBg,
                       borderTop: secBorder, borderBottom:'1px solid #E2E8F0', borderLeft:'1px solid #CBD5E1'
                     }}></td>
@@ -180,26 +235,44 @@ export function GanttTable({
               {/* ── Task Rows ── */}
               {section.is_open && section.tasks.map(task => (
                 <tr key={task.id}>
-                  <td style={{ position:'sticky', left:0, zIndex:7, background:'white', borderBottom:'1px solid #E2E8F0', minWidth:248, maxWidth:248, borderRight:'1px solid #E2E8F0', padding:0, height:36 }}>
+                  <td
+                    style={{ position:'sticky', left:0, zIndex:7, background:'white', borderBottom:'1px solid #E2E8F0', minWidth:248, maxWidth:248, borderRight:'1px solid #E2E8F0', padding:0, height:36 }}
+                    onMouseEnter={() => setHoveredTaskId(task.id)}
+                    onMouseLeave={() => setHoveredTaskId(null)}
+                  >
                     <div style={{ display:'flex', alignItems:'stretch', height:'100%' }}>
                       <div style={{ width:3, flexShrink:0, background: section.color || '#94a3b8' }}></div>
-                      <div style={{ flex:1, padding:'0 8px', display:'flex', flexDirection:'column', justifyContent:'center', minWidth:0 }}>
-                        <span
-                          onDoubleClick={() => handleTaskNameDoubleClick(task.id, task.name)}
-                          style={{ fontSize:'.78rem', color:'#334155', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', cursor:'text' }}
-                          title={task.name}
-                        >
-                          {editingTaskId === task.id ? (
-                            <input
-                              autoFocus
-                              value={editingTaskName}
-                              onChange={e => setEditingTaskName(e.target.value)}
-                              onBlur={() => handleTaskNameSave(task.id)}
-                              onKeyDown={e => { if (e.key === 'Enter') handleTaskNameSave(task.id); if (e.key === 'Escape') setEditingTaskId(null) }}
-                              style={{ fontSize:'.78rem', color:'#334155', border:'none', background:'white', outline:'2px solid #2B5A8A', borderRadius:3, width:'100%', padding:'1px 3px', fontFamily:'inherit' }}
-                            />
-                          ) : task.name}
-                        </span>
+                      <div style={{ flex:1, padding:'0 6px 0 7px', display:'flex', flexDirection:'column', justifyContent:'center', minWidth:0 }}>
+
+                        {editingTaskId === task.id ? (
+                          <input
+                            autoFocus
+                            value={editingTaskName}
+                            onChange={e => setEditingTaskName(e.target.value)}
+                            onBlur={() => handleTaskNameSave(task.id)}
+                            onKeyDown={e => { if (e.key === 'Enter') handleTaskNameSave(task.id); if (e.key === 'Escape') setEditingTaskId(null) }}
+                            style={{ fontSize:'.78rem', color:'#334155', border:'none', background:'white', outline:'2px solid #2B5A8A', borderRadius:3, width:'100%', padding:'1px 3px', fontFamily:'inherit' }}
+                          />
+                        ) : (
+                          <div style={{ display:'flex', alignItems:'center', gap:3, minWidth:0 }}>
+                            <span
+                              style={{ fontSize:'.78rem', color:'#334155', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', flex:1 }}
+                              title={task.name}
+                              onDoubleClick={() => handleTaskNameDoubleClick(task.id, task.name)}
+                            >
+                              {task.name}
+                            </span>
+                            {/* ホバー時に鉛筆ボタン表示 */}
+                            {hoveredTaskId === task.id && (
+                              <button
+                                onClick={e => { e.stopPropagation(); handleTaskNameDoubleClick(task.id, task.name) }}
+                                title="タスク名を編集"
+                                style={{ flexShrink:0, padding:'1px 4px', background:'white', border:'1px solid #CBD5E1', borderRadius:3, cursor:'pointer', color:'#64748B', fontSize:'.62rem', fontFamily:'inherit', lineHeight:1 }}
+                              >✏</button>
+                            )}
+                          </div>
+                        )}
+
                         <div style={{ display:'flex', alignItems:'center', gap:5, marginTop:2 }}>
                           {task.due_date ? (
                             <button
@@ -227,7 +300,7 @@ export function GanttTable({
                     const isMainEvent = (month as any).isMain
                     return (
                       <td key={month.id}
-                        onClick={() => onCellClick(task.id, month.id, task.name, section.name, cell || null)}
+                        onClick={() => onCellClick(task.id, month.id, task.name, section.name, cell || null, section.id)}
                         style={{
                           height:36, borderBottom:'1px solid #E2E8F0',
                           textAlign:'center', cursor:'pointer', verticalAlign:'middle',
