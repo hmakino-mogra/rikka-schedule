@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { SectionWithTasks, TaskCell, Milestone, MONTHS, CURRENT_MONTH_ID, fmtDate } from '@/lib/database.types'
+import { SectionWithTasks, TaskWithCells, TaskCell, Milestone, MONTHS, CURRENT_MONTH_ID, fmtDate } from '@/lib/database.types'
 
 interface Props {
   sections: SectionWithTasks[]
@@ -17,6 +17,29 @@ interface Props {
   onAddTaskToSection: (sectionId: string) => void
   onSectionDelete: (sectionId: string) => void
   onSectionMove: (sectionId: string, direction: 'up' | 'down') => void
+}
+
+// ── アラートレベル判定 ──────────────────────────────────────────
+type AlertLevel = 'overdue' | 'delayed' | 'done' | 'ok'
+
+function getTaskAlert(task: TaskWithCells): AlertLevel {
+  const isDone = task.cells.some(c => c.content === '済')
+  if (isDone) return 'done'
+
+  // due_date が今日より前なら期限切れ
+  if (task.due_date) {
+    const today = new Date(); today.setHours(0, 0, 0, 0)
+    const due = new Date(task.due_date + 'T00:00:00')
+    if (due < today) return 'overdue'
+  }
+
+  // 過去月に「予定」が付いているが「済」になっていない → 遅延中
+  const hasDelayed = MONTHS
+    .filter(m => m.id < CURRENT_MONTH_ID)
+    .some(m => task.cells.find(c => c.month_id === m.id)?.content === '予定')
+  if (hasDelayed) return 'delayed'
+
+  return 'ok'
 }
 
 export function GanttTable({
@@ -50,10 +73,8 @@ export function GanttTable({
       if (idx < 0) return
       const TASK_COL = 248
       const CELL_W = 86
-      // 今月セルの左端 X 座標
       const targetLeft = TASK_COL + CELL_W * idx
       const containerWidth = scrollRef.current.clientWidth
-      // 今月列が中央に来るよう scrollLeft を算出
       const scrollTo = targetLeft - containerWidth / 2 + CELL_W / 2
       scrollRef.current.scrollTo({ left: Math.max(0, scrollTo), behavior: 'smooth' })
     }, 150)
@@ -77,14 +98,31 @@ export function GanttTable({
     setEditingSectionId(null)
   }
 
+  // ── ステータスバッジ ──
   const renderStatusBadge = (content: string | null) => {
     if (!content) return null
     if (content === '済')
-      return <span style={{ display:'inline-flex', alignItems:'center', gap:3, padding:'3px 8px', borderRadius:11, fontSize:'.67rem', fontWeight:700, lineHeight:1, background:'#D1FAE5', color:'#059669' }}>✓ 済</span>
+      return <span style={{ display:'inline-flex', alignItems:'center', gap:3, padding:'2px 7px', borderRadius:11, fontSize:'.67rem', fontWeight:700, lineHeight:1, background:'#D1FAE5', color:'#059669' }}>✓ 済</span>
     if (content === '予定')
-      return <span style={{ display:'inline-flex', alignItems:'center', gap:3, padding:'3px 8px', borderRadius:11, fontSize:'.67rem', fontWeight:700, lineHeight:1, background:'#FEF3C7', color:'#D97706' }}>● 予定</span>
-    return <span style={{ display:'inline-flex', alignItems:'center', gap:3, padding:'3px 8px', borderRadius:11, fontSize:'.67rem', fontWeight:700, lineHeight:1, background:'#DBEAFE', color:'#2563EB' }}>{content}</span>
+      return <span style={{ display:'inline-flex', alignItems:'center', gap:3, padding:'2px 7px', borderRadius:11, fontSize:'.67rem', fontWeight:700, lineHeight:1, background:'#FEF3C7', color:'#D97706' }}>● 予定</span>
+    return <span style={{ display:'inline-flex', alignItems:'center', gap:3, padding:'2px 7px', borderRadius:11, fontSize:'.67rem', fontWeight:700, lineHeight:1, background:'#DBEAFE', color:'#2563EB' }}>{content}</span>
   }
+
+  // ── セル内容（ステータス + 担当者）──
+  const renderCellContent = (cell: TaskCell) => (
+    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:2, padding:'2px 0' }}>
+      {renderStatusBadge(cell.content)}
+      {cell.assignee && (
+        <span style={{
+          fontSize:'.58rem', color:'#64748B', lineHeight:1,
+          maxWidth:74, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap',
+          background:'#F1F5F9', borderRadius:3, padding:'1px 4px',
+        }}>
+          👤 {cell.assignee}
+        </span>
+      )}
+    </div>
+  )
 
   return (
     <div
@@ -149,6 +187,15 @@ export function GanttTable({
           const doneCnt = section.tasks.filter(t => t.cells.some(c => c.content === '済')).length
           const totalCnt = section.tasks.length
           const pct = totalCnt > 0 ? Math.round(doneCnt / totalCnt * 100) : 0
+
+          // セクション内のアラート数を集計
+          const alertCounts = section.tasks.reduce((acc, t) => {
+            const a = getTaskAlert(t)
+            if (a === 'overdue') acc.overdue++
+            else if (a === 'delayed') acc.delayed++
+            return acc
+          }, { overdue: 0, delayed: 0 })
+
           const isSub = section.is_sub
           const secBg = isSub ? '#f0ebff' : '#e4eaf5'
           const secBorder = isSub ? '1px solid #e9d5ff' : '2px solid #E2E8F0'
@@ -179,7 +226,7 @@ export function GanttTable({
                       <span
                         onDoubleClick={() => handleSectionNameDoubleClick(section.id, section.name)}
                         title="ダブルクリックで名前を編集"
-                        style={{ fontSize:'.7rem', fontWeight:700, color:'#334155', cursor:'pointer', padding:'2px 3px', borderRadius:3, maxWidth:90, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}
+                        style={{ fontSize:'.7rem', fontWeight:700, color:'#334155', cursor:'pointer', padding:'2px 3px', borderRadius:3, maxWidth:80, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}
                       >
                         {section.name}
                       </span>
@@ -187,7 +234,19 @@ export function GanttTable({
 
                     <span style={{ fontSize:'.6rem', color:'#64748B', background:'#E2E8F0', borderRadius:10, padding:'1px 5px', whiteSpace:'nowrap', flexShrink:0 }}>{totalCnt}</span>
 
-                    <div style={{ flex:1, margin:'0 3px', minWidth:30 }}>
+                    {/* アラートバッジをセクションヘッダーにも表示 */}
+                    {alertCounts.overdue > 0 && (
+                      <span title={`期限切れ ${alertCounts.overdue}件`} style={{ fontSize:'.58rem', fontWeight:700, background:'#FEE2E2', color:'#DC2626', borderRadius:8, padding:'1px 5px', whiteSpace:'nowrap', flexShrink:0 }}>
+                        🔴 {alertCounts.overdue}
+                      </span>
+                    )}
+                    {alertCounts.delayed > 0 && (
+                      <span title={`遅延 ${alertCounts.delayed}件`} style={{ fontSize:'.58rem', fontWeight:700, background:'#FEF3C7', color:'#B45309', borderRadius:8, padding:'1px 5px', whiteSpace:'nowrap', flexShrink:0 }}>
+                        🟡 {alertCounts.delayed}
+                      </span>
+                    )}
+
+                    <div style={{ flex:1, margin:'0 3px', minWidth:20 }}>
                       <div style={{ height:3, background:'#E2E8F0', borderRadius:2, overflow:'hidden' }}>
                         <div style={{ height:'100%', borderRadius:2, transition:'width .4s', background: section.color || '#3B82F6', width:`${pct}%` }}></div>
                       </div>
@@ -239,88 +298,116 @@ export function GanttTable({
               </tr>
 
               {/* ── Task Rows ── */}
-              {section.is_open && section.tasks.map(task => (
-                <tr key={task.id}>
-                  <td
-                    style={{ position:'sticky', left:0, zIndex:7, background:'white', borderBottom:'1px solid #E2E8F0', minWidth:248, maxWidth:248, borderRight:'1px solid #E2E8F0', padding:0, height:36 }}
-                    onMouseEnter={() => setHoveredTaskId(task.id)}
-                    onMouseLeave={() => setHoveredTaskId(null)}
-                  >
-                    <div style={{ display:'flex', alignItems:'stretch', height:'100%' }}>
-                      <div style={{ width:3, flexShrink:0, background: section.color || '#94a3b8' }}></div>
-                      <div style={{ flex:1, padding:'0 6px 0 7px', display:'flex', flexDirection:'column', justifyContent:'center', minWidth:0 }}>
+              {section.is_open && section.tasks.map(task => {
+                const alert = getTaskAlert(task)
+                // アラートに応じた色設定
+                const rowBg     = alert === 'overdue' ? 'rgba(239,68,68,.05)'   : alert === 'delayed' ? 'rgba(245,158,11,.05)' : 'white'
+                const barColor  = alert === 'overdue' ? '#EF4444'               : alert === 'delayed' ? '#F59E0B'              : (section.color || '#94a3b8')
 
-                        {editingTaskId === task.id ? (
-                          <input
-                            autoFocus
-                            value={editingTaskName}
-                            onChange={e => setEditingTaskName(e.target.value)}
-                            onBlur={() => handleTaskNameSave(task.id)}
-                            onKeyDown={e => { if (e.key === 'Enter') handleTaskNameSave(task.id); if (e.key === 'Escape') setEditingTaskId(null) }}
-                            style={{ fontSize:'.78rem', color:'#334155', border:'none', background:'white', outline:'2px solid #2B5A8A', borderRadius:3, width:'100%', padding:'1px 3px', fontFamily:'inherit' }}
-                          />
-                        ) : (
-                          <div style={{ display:'flex', alignItems:'center', gap:3, minWidth:0 }}>
-                            <span
-                              style={{ fontSize:'.78rem', color:'#334155', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', flex:1 }}
-                              title={task.name}
-                              onDoubleClick={() => handleTaskNameDoubleClick(task.id, task.name)}
-                            >
-                              {task.name}
-                            </span>
-                            {/* ホバー時に鉛筆ボタン表示 */}
-                            {hoveredTaskId === task.id && (
+                return (
+                  <tr key={task.id}>
+                    <td
+                      style={{ position:'sticky', left:0, zIndex:7, background: rowBg, borderBottom:'1px solid #E2E8F0', minWidth:248, maxWidth:248, borderRight:'1px solid #E2E8F0', padding:0, height:40 }}
+                      onMouseEnter={() => setHoveredTaskId(task.id)}
+                      onMouseLeave={() => setHoveredTaskId(null)}
+                    >
+                      <div style={{ display:'flex', alignItems:'stretch', height:'100%' }}>
+                        {/* 左のカラーバー（アラート時は赤/橙） */}
+                        <div style={{ width:3, flexShrink:0, background: barColor }}></div>
+                        <div style={{ flex:1, padding:'0 6px 0 7px', display:'flex', flexDirection:'column', justifyContent:'center', minWidth:0 }}>
+
+                          {editingTaskId === task.id ? (
+                            <input
+                              autoFocus
+                              value={editingTaskName}
+                              onChange={e => setEditingTaskName(e.target.value)}
+                              onBlur={() => handleTaskNameSave(task.id)}
+                              onKeyDown={e => { if (e.key === 'Enter') handleTaskNameSave(task.id); if (e.key === 'Escape') setEditingTaskId(null) }}
+                              style={{ fontSize:'.78rem', color:'#334155', border:'none', background:'white', outline:'2px solid #2B5A8A', borderRadius:3, width:'100%', padding:'1px 3px', fontFamily:'inherit' }}
+                            />
+                          ) : (
+                            <div style={{ display:'flex', alignItems:'center', gap:3, minWidth:0 }}>
+                              <span
+                                style={{ fontSize:'.78rem', color:'#334155', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', flex:1 }}
+                                title={task.name}
+                                onDoubleClick={() => handleTaskNameDoubleClick(task.id, task.name)}
+                              >
+                                {task.name}
+                              </span>
+                              {hoveredTaskId === task.id && (
+                                <button
+                                  onClick={e => { e.stopPropagation(); handleTaskNameDoubleClick(task.id, task.name) }}
+                                  title="タスク名を編集"
+                                  style={{ flexShrink:0, padding:'1px 4px', background:'white', border:'1px solid #CBD5E1', borderRadius:3, cursor:'pointer', color:'#64748B', fontSize:'.62rem', fontFamily:'inherit', lineHeight:1 }}
+                                >✏</button>
+                              )}
+                            </div>
+                          )}
+
+                          {/* 日付チップ or アラートバッジ */}
+                          <div style={{ display:'flex', alignItems:'center', gap:4, marginTop:2 }}>
+                            {task.due_date ? (
                               <button
-                                onClick={e => { e.stopPropagation(); handleTaskNameDoubleClick(task.id, task.name) }}
-                                title="タスク名を編集"
-                                style={{ flexShrink:0, padding:'1px 4px', background:'white', border:'1px solid #CBD5E1', borderRadius:3, cursor:'pointer', color:'#64748B', fontSize:'.62rem', fontFamily:'inherit', lineHeight:1 }}
-                              >✏</button>
+                                onClick={e => onDateChipClick(task.id, task.due_date, (e.currentTarget as HTMLElement).getBoundingClientRect())}
+                                style={{
+                                  display:'inline-flex', alignItems:'center', gap:3, borderRadius:5, padding:'1px 6px', fontSize:'.63rem', cursor:'pointer', whiteSpace:'nowrap',
+                                  background: alert === 'overdue' ? '#FEE2E2' : '#f0f9ff',
+                                  border:     alert === 'overdue' ? '1px solid #FCA5A5' : '1px solid #bae6fd',
+                                  color:      alert === 'overdue' ? '#DC2626' : '#0369a1',
+                                }}
+                              >
+                                📅 {fmtDate(task.due_date)}
+                                {alert === 'overdue' && <span style={{ fontWeight:700 }}>期限切れ</span>}
+                              </button>
+                            ) : (
+                              <button
+                                onClick={e => onDateChipClick(task.id, null, (e.currentTarget as HTMLElement).getBoundingClientRect())}
+                                style={{ display:'inline-flex', alignItems:'center', gap:2, fontSize:'.62rem', color:'#94A3B8', cursor:'pointer', padding:'1px 4px', borderRadius:4, background:'none', border:'none', fontFamily:'inherit' }}
+                              >
+                                ＋ 日付
+                              </button>
+                            )}
+                            {/* 遅延バッジ（due_dateなし or 遅延中） */}
+                            {alert === 'delayed' && (
+                              <span style={{ fontSize:'.58rem', fontWeight:700, color:'#B45309', background:'#FEF3C7', borderRadius:6, padding:'1px 5px', whiteSpace:'nowrap' }}>
+                                ⚠ 遅延
+                              </span>
                             )}
                           </div>
-                        )}
-
-                        <div style={{ display:'flex', alignItems:'center', gap:5, marginTop:2 }}>
-                          {task.due_date ? (
-                            <button
-                              onClick={e => onDateChipClick(task.id, task.due_date, (e.currentTarget as HTMLElement).getBoundingClientRect())}
-                              style={{ display:'inline-flex', alignItems:'center', gap:3, background:'#f0f9ff', border:'1px solid #bae6fd', borderRadius:5, padding:'1px 6px', fontSize:'.63rem', color:'#0369a1', cursor:'pointer', whiteSpace:'nowrap' }}
-                            >
-                              📅 {fmtDate(task.due_date)}
-                            </button>
-                          ) : (
-                            <button
-                              onClick={e => onDateChipClick(task.id, null, (e.currentTarget as HTMLElement).getBoundingClientRect())}
-                              style={{ display:'inline-flex', alignItems:'center', gap:2, fontSize:'.62rem', color:'#94A3B8', cursor:'pointer', padding:'1px 4px', borderRadius:4, background:'none', border:'none', fontFamily:'inherit' }}
-                            >
-                              ＋ 日付
-                            </button>
-                          )}
                         </div>
                       </div>
-                    </div>
-                  </td>
+                    </td>
 
-                  {MONTHS.map(month => {
-                    const cell = task.cells.find(c => c.month_id === month.id)
-                    const isCurrentMonth = month.id === CURRENT_MONTH_ID
-                    const isMainEvent = (month as any).isMain
-                    return (
-                      <td key={month.id}
-                        onClick={() => onCellClick(task.id, month.id, task.name, section.name, cell || null, section.id)}
-                        style={{
-                          height:36, borderBottom:'1px solid #E2E8F0',
-                          textAlign:'center', cursor:'pointer', verticalAlign:'middle',
-                          minWidth:86, position:'relative',
-                          background: isMainEvent ? 'rgba(220,38,38,.04)' : isCurrentMonth ? 'rgba(37,99,235,.04)' : 'white',
-                          borderLeft:'1px solid #CBD5E1'
-                        }}
-                      >
-                        {cell && renderStatusBadge(cell.content)}
-                      </td>
-                    )
-                  })}
-                </tr>
-              ))}
+                    {MONTHS.map(month => {
+                      const cell = task.cells.find(c => c.month_id === month.id)
+                      const isCurrentMonth = month.id === CURRENT_MONTH_ID
+                      const isMainEvent = (month as any).isMain
+                      // 遅延・期限切れの月セルは背景を強調
+                      const cellAlertBg = (() => {
+                        if (isMainEvent) return 'rgba(220,38,38,.04)'
+                        if (isCurrentMonth) return 'rgba(37,99,235,.04)'
+                        if (alert !== 'ok' && alert !== 'done' && month.id < CURRENT_MONTH_ID && cell?.content === '予定')
+                          return 'rgba(245,158,11,.08)'
+                        return 'white'
+                      })()
+                      return (
+                        <td key={month.id}
+                          onClick={() => onCellClick(task.id, month.id, task.name, section.name, cell || null, section.id)}
+                          style={{
+                            height:40, borderBottom:'1px solid #E2E8F0',
+                            textAlign:'center', cursor:'pointer', verticalAlign:'middle',
+                            minWidth:86, position:'relative',
+                            background: cellAlertBg,
+                            borderLeft:'1px solid #CBD5E1'
+                          }}
+                        >
+                          {cell && renderCellContent(cell)}
+                        </td>
+                      )
+                    })}
+                  </tr>
+                )
+              })}
 
               {/* ── Add Task Row ── */}
               {section.is_open && (

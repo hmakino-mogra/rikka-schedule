@@ -41,6 +41,7 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
   } | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [currentFilter, setCurrentFilter] = useState('すべて')
+  const [sectionFilter, setSectionFilter] = useState('すべて')
   const [toast, setToast] = useState<string | null>(null)
 
   const showToast = useCallback((msg: string) => {
@@ -119,7 +120,9 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
   const percentage = totalTasks > 0 ? Math.round((completedCount / totalTasks) * 100) : 0
 
   // ── フィルタリング ──
-  const filteredSections = sections.map(sec => ({
+  const filteredSections = sections
+    .filter(sec => sectionFilter === 'すべて' || sec.id === sectionFilter)
+    .map(sec => ({
     ...sec,
     tasks: sec.tasks.filter(task => {
       const matchesSearch = task.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -265,19 +268,22 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
         </button>
       </div>
 
-      {/* Header Row 2 */}
-      <div style={{ height:38, display:'flex', alignItems:'center', padding:'0 18px', gap:8, background:'#0a1828', borderTop:'1px solid rgba(255,255,255,.06)', flexShrink:0 }}>
-        <div style={{ position:'relative', flex:1, maxWidth:220 }}>
+      {/* Header Row 2 — 検索 / ステータスフィルター */}
+      <div style={{ height:36, display:'flex', alignItems:'center', padding:'0 18px', gap:8, background:'#0a1828', borderTop:'1px solid rgba(255,255,255,.06)', flexShrink:0 }}>
+        {/* 検索 */}
+        <div style={{ position:'relative', flexShrink:0, width:180 }}>
           <input
             type="text"
             placeholder="タスクを検索…"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            style={{ width:'100%', padding:'5px 10px 5px 28px', border:'1px solid rgba(255,255,255,.12)', borderRadius:6, background:'rgba(255,255,255,.08)', color:'white', fontSize:'.76rem', fontFamily:'inherit', outline:'none' }}
+            style={{ width:'100%', padding:'4px 10px 4px 26px', border:'1px solid rgba(255,255,255,.12)', borderRadius:6, background:'rgba(255,255,255,.08)', color:'white', fontSize:'.72rem', fontFamily:'inherit', outline:'none' }}
           />
-          <span style={{ position:'absolute', left:8, top:'50%', transform:'translateY(-50%)', fontSize:'.72rem', pointerEvents:'none' }}>🔍</span>
+          <span style={{ position:'absolute', left:7, top:'50%', transform:'translateY(-50%)', fontSize:'.68rem', pointerEvents:'none' }}>🔍</span>
         </div>
-        <div style={{ display:'flex', gap:4 }}>
+
+        {/* ステータスフィルター */}
+        <div style={{ display:'flex', gap:3, flexShrink:0 }}>
           {[
             { key:'すべて', label:'すべて' },
             { key:'済',    label:'✓ 済' },
@@ -288,21 +294,47 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
               key={key}
               onClick={() => setCurrentFilter(key)}
               style={{
-                padding:'3px 10px', borderRadius:12, cursor:'pointer', fontFamily:'inherit',
-                fontSize:'.7rem', fontWeight:600, transition:'all .12s',
+                padding:'2px 9px', borderRadius:12, cursor:'pointer', fontFamily:'inherit',
+                fontSize:'.68rem', fontWeight:600, transition:'all .12s',
                 border: currentFilter === key ? '1px solid rgba(201,168,76,.5)' : '1px solid rgba(255,255,255,.15)',
                 background: currentFilter === key ? 'rgba(201,168,76,.18)' : 'transparent',
-                color: currentFilter === key ? '#E8C96A' : 'rgba(255,255,255,.55)',
+                color: currentFilter === key ? '#E8C96A' : 'rgba(255,255,255,.5)',
               }}
-            >
-              {label}
-            </button>
+            >{label}</button>
           ))}
         </div>
-        <div style={{ display:'flex', gap:6, marginLeft:'auto' }}>
-          <span style={{ padding:'2px 7px', borderRadius:10, fontSize:'.62rem', fontWeight:700, background:'#D1FAE5', color:'#059669' }}>✓ 済</span>
-          <span style={{ padding:'2px 7px', borderRadius:10, fontSize:'.62rem', fontWeight:700, background:'#FEF3C7', color:'#D97706' }}>● 予定</span>
-          <span style={{ padding:'2px 7px', borderRadius:10, fontSize:'.62rem', fontWeight:700, background:'#DBEAFE', color:'#2563EB' }}>日 日付入り</span>
+
+        {/* 区切り線 */}
+        <div style={{ width:1, height:16, background:'rgba(255,255,255,.15)', flexShrink:0 }} />
+
+        {/* 部フィルター（横スクロール対応） */}
+        <div style={{ display:'flex', gap:3, overflowX:'auto', flex:1, alignItems:'center' }}>
+          <button
+            onClick={() => setSectionFilter('すべて')}
+            style={{
+              padding:'2px 9px', borderRadius:12, cursor:'pointer', fontFamily:'inherit', flexShrink:0,
+              fontSize:'.68rem', fontWeight:600, transition:'all .12s', whiteSpace:'nowrap',
+              border: sectionFilter === 'すべて' ? '1px solid rgba(255,255,255,.4)' : '1px solid rgba(255,255,255,.12)',
+              background: sectionFilter === 'すべて' ? 'rgba(255,255,255,.15)' : 'transparent',
+              color: sectionFilter === 'すべて' ? 'white' : 'rgba(255,255,255,.45)',
+            }}
+          >全部署</button>
+          {sections.map(sec => (
+            <button
+              key={sec.id}
+              onClick={() => setSectionFilter(sec.id)}
+              style={{
+                padding:'2px 9px', borderRadius:12, cursor:'pointer', fontFamily:'inherit', flexShrink:0,
+                fontSize:'.68rem', fontWeight:600, transition:'all .12s', whiteSpace:'nowrap',
+                display:'flex', alignItems:'center', gap:4,
+                border: sectionFilter === sec.id ? `1px solid ${sec.color || '#94a3b8'}` : '1px solid rgba(255,255,255,.12)',
+                background: sectionFilter === sec.id ? `${sec.color}22` : 'transparent',
+                color: sectionFilter === sec.id ? (sec.color || 'white') : 'rgba(255,255,255,.45)',
+              }}
+            >
+              <span style={{ fontSize:'.55rem' }}>●</span>{sec.name}
+            </button>
+          ))}
         </div>
       </div>
 
