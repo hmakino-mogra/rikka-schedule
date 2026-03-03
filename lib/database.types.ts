@@ -11,6 +11,7 @@ export interface Database {
           is_sub: boolean
           sort_order: number
           is_open: boolean
+          linked_task_orders: Json | null
           created_at: string
           updated_at: string
         }

@@ -120,16 +120,18 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
   const totalTasks = sections.reduce((total, sec) => total + sec.tasks.length, 0)
   const percentage = totalTasks > 0 ? Math.round((completedCount / totalTasks) * 100) : 0
 
-  // ── フィルタリング（リンクタスクを各セクションに展開）──
+  // ── フィルタリング（リンクタスクを各セクションに展開・ソート）──
   const allTasks = sections.flatMap(sec => sec.tasks)
   const filteredSections = sections
     .filter(sec => sectionFilter === 'すべて' || sec.id === sectionFilter)
     .map(sec => {
-      // 他セクションのタスクのうち、このセクションにリンクされているものを追加
+      const linkedOrders = ((sec.linked_task_orders ?? {}) as Record<string, number>)
+      // 他セクションのタスクのうち、このセクションにリンクされているものを追加（表示順を付与）
       const linkedTasks = allTasks.filter(
         task => task.section_id !== sec.id && (task.linked_section_ids ?? []).includes(sec.id)
-      )
+      ).map(task => ({ ...task, sort_order: linkedOrders[task.id] ?? 99999 }))
       const allSecTasks = [...sec.tasks, ...linkedTasks]
+        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
       return {
         ...sec,
         tasks: allSecTasks.filter(task => {
@@ -221,31 +223,64 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
     ])
   }
 
-  // ── タスクのドラッグ並び替え ──
-  const handleTaskReorder = (fromTaskId: string, toTaskId: string, insertBefore: boolean) => {
-    // まず新しい順序を計算してから state と DB を更新
+  // ── タスクのドラッグ並び替え（リンクタスク対応）──
+  const handleTaskReorder = (sectionId: string, fromTaskId: string, toTaskId: string, insertBefore: boolean) => {
     setSections(prev => {
-      let orderUpdates: { id: string; sort_order: number }[] = []
-      const newSections = prev.map(sec => {
-        const fromIdx = sec.tasks.findIndex(t => t.id === fromTaskId)
-        const toIdx   = sec.tasks.findIndex(t => t.id === toTaskId)
-        if (fromIdx < 0 || toIdx < 0 || fromIdx === toIdx) return sec
-        const newTasks = [...sec.tasks]
-        const [movedTask] = newTasks.splice(fromIdx, 1)
-        const newToIdx = newTasks.findIndex(t => t.id === toTaskId)
-        newTasks.splice(insertBefore ? newToIdx : newToIdx + 1, 0, movedTask)
-        orderUpdates = newTasks.map((t, i) => ({ id: t.id, sort_order: i }))
-        return { ...sec, tasks: newTasks }
+      const section = prev.find(s => s.id === sectionId)
+      if (!section) return prev
+
+      // このセクションの表示タスク一覧を構築（ネイティブ + リンク）
+      const linkedOrders = ((section.linked_task_orders ?? {}) as Record<string, number>)
+      const allDisplayed = [
+        ...section.tasks,
+        ...prev.flatMap(s => s.tasks).filter(
+          t => t.section_id !== sectionId && (t.linked_section_ids ?? []).includes(sectionId)
+        ).map(t => ({ ...t, sort_order: linkedOrders[t.id] ?? 99999 }))
+      ].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+
+      const fromIdx = allDisplayed.findIndex(t => t.id === fromTaskId)
+      const toIdx   = allDisplayed.findIndex(t => t.id === toTaskId)
+      if (fromIdx < 0 || toIdx < 0 || fromIdx === toIdx) return prev
+
+      const reordered = [...allDisplayed]
+      const [moved] = reordered.splice(fromIdx, 1)
+      const newToIdx = reordered.findIndex(t => t.id === toTaskId)
+      reordered.splice(insertBefore ? newToIdx : newToIdx + 1, 0, moved)
+
+      const nativeUpdates: { id: string; sort_order: number }[] = []
+      const newLinkedOrders: Record<string, number> = { ...linkedOrders }
+
+      reordered.forEach((t, i) => {
+        const newOrder = (i + 1) * 10
+        if (t.section_id === sectionId) {
+          nativeUpdates.push({ id: t.id, sort_order: newOrder })
+        } else {
+          newLinkedOrders[t.id] = newOrder
+        }
       })
-      // DB に保存（.then() で確実にリクエストを発火させる）
-      if (orderUpdates.length > 0) {
-        Promise.all(
-          orderUpdates.map(({ id, sort_order }) =>
-            (supabase.from('tasks') as any).update({ sort_order }).eq('id', id)
-          )
-        ).catch(console.error)
-      }
-      return newSections
+
+      // DB保存
+      Promise.all([
+        ...nativeUpdates.map(({ id, sort_order }) =>
+          (supabase.from('tasks') as any).update({ sort_order }).eq('id', id)
+        ),
+        (supabase.from('sections') as any)
+          .update({ linked_task_orders: newLinkedOrders })
+          .eq('id', sectionId)
+      ]).catch(console.error)
+
+      // ローカルstate更新
+      return prev.map(sec => {
+        if (sec.id !== sectionId) return sec
+        return {
+          ...sec,
+          linked_task_orders: newLinkedOrders,
+          tasks: sec.tasks.map(t => {
+            const u = nativeUpdates.find(o => o.id === t.id)
+            return u ? { ...t, sort_order: u.sort_order } : t
+          })
+        }
+      })
     })
   }
 
