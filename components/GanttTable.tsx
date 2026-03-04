@@ -157,7 +157,7 @@ export function GanttTable({
     return (
       <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:2, padding:'2px 0' }}>
         {autoCompleted
-          ? <span style={{ display:'inline-flex', alignItems:'center', gap:3, padding:'2px 7px', borderRadius:11, fontSize:'.67rem', fontWeight:700, lineHeight:1, background:'#F1F5F9', color:'#94A3B8' }}>✓ 実施済</span>
+          ? <span style={{ fontSize:'.6rem', color:'#CBD5E1', fontStyle:'italic', lineHeight:1 }}>✓ 実施済</span>
           : isReiwaDateContent
             ? null  // 令和日付コンテンツは下のチップで表示
             : renderStatusBadge(cell.content)
@@ -271,12 +271,13 @@ export function GanttTable({
               {/* ── Section Header ── */}
               <tr>
                 <td
-                  style={{ position:'sticky', left:0, zIndex:8, background: secBg, borderTop: secBorder, borderBottom:'1px solid #E2E8F0', height:34, minWidth:248, maxWidth:248, padding:0 }}
+                  style={{ position:'sticky', left:0, zIndex:8, background: secBg, borderTop: secBorder, borderBottom:'1px solid #EEF2F7', height:34, minWidth:248, maxWidth:248, padding:0 }}
                   onMouseEnter={() => setHoveredSectionId(section.id)}
                   onMouseLeave={() => setHoveredSectionId(null)}
                 >
-                  <div style={{ display:'flex', alignItems:'center', height:'100%', gap:5, padding:'0 6px 0 12px' }}>
-                    <div style={{ width:7, height:7, borderRadius:'50%', flexShrink:0, background: section.color || '#94a3b8' }}></div>
+                  <div style={{ display:'flex', alignItems:'center', height:'100%', gap:5, padding:'0 6px 0 0' }}>
+                    {/* セクションカラーの太い左アクセントライン */}
+                    <div style={{ width:4, alignSelf:'stretch', flexShrink:0, background: section.color || '#94a3b8', borderRadius:'0 2px 2px 0' }}></div>
 
                     {editingSectionId === section.id ? (
                       <input
@@ -356,7 +357,7 @@ export function GanttTable({
                     <td key={month.id} style={{
                       height:34,
                       background: isMainEvent ? 'rgba(220,38,38,.04)' : isCurrentMonth ? 'rgba(37,99,235,.04)' : secBg,
-                      borderTop: secBorder, borderBottom:'1px solid #E2E8F0', borderLeft:'1px solid #CBD5E1'
+                      borderTop: secBorder, borderBottom:'1px solid #EEF2F7',
                     }}></td>
                   )
                 })}
@@ -422,7 +423,7 @@ export function GanttTable({
                     style={{ opacity: draggedTaskId === task.id ? 0.35 : 1, transition:'opacity .1s' }}
                   >
                     <td
-                      style={{ position:'sticky', left:0, zIndex:7, background: isHovered ? hoverTaskBg : rowBg, borderBottom:'1px solid #E2E8F0', minWidth:248, maxWidth:248, borderRight:'1px solid #E2E8F0', padding:0, height:40, transition:'background .1s', boxShadow: dropShadow }}
+                      style={{ position:'sticky', left:0, zIndex:7, background: isHovered ? hoverTaskBg : rowBg, borderBottom:'1px solid #EEF2F7', minWidth:248, maxWidth:248, borderRight:'1px solid #E8EDF3', padding:0, height:46, transition:'background .1s', boxShadow: dropShadow }}
                     >
                       <div style={{ display:'flex', alignItems:'stretch', height:'100%' }}>
                         {/* 左のカラーバー（アラート時は赤/橙） */}
@@ -481,14 +482,14 @@ export function GanttTable({
                                 📅 {fmtDate(task.due_date)}
                                 {alert === 'overdue' && <span style={{ fontWeight:700 }}>期限切れ</span>}
                               </button>
-                            ) : (
+                            ) : isHovered ? (
                               <button
                                 onClick={e => onDateChipClick(task.id, null, (e.currentTarget as HTMLElement).getBoundingClientRect())}
                                 style={{ display:'inline-flex', alignItems:'center', gap:2, fontSize:'.62rem', color:'#94A3B8', cursor:'pointer', padding:'1px 4px', borderRadius:4, background:'none', border:'none', fontFamily:'inherit' }}
                               >
                                 ＋ 日付
                               </button>
-                            )}
+                            ) : null}
                             {/* 遅延バッジ（due_dateなし or 遅延中） */}
                             {alert === 'delayed' && (
                               <span style={{ fontSize:'.58rem', fontWeight:700, color:'#B45309', background:'#FEF3C7', borderRadius:6, padding:'1px 5px', whiteSpace:'nowrap' }}>
@@ -535,11 +536,10 @@ export function GanttTable({
                         <td key={month.id}
                           onClick={() => onCellClick(task.id, month.id, task.name, section.name, cell || spanningCell || null, section.id)}
                           style={{
-                            height:40, borderBottom:'1px solid #E2E8F0',
+                            height:46, borderBottom:'1px solid #EEF2F7',
                             textAlign:'center', cursor:'pointer', verticalAlign:'middle',
                             minWidth:86, position:'relative',
                             background: isHovered ? monthHoverBg : cellAlertBg,
-                            borderLeft:'1px solid #CBD5E1',
                             transition:'background .1s',
                             boxShadow: dropShadow,
                           }}
@@ -582,9 +582,8 @@ export function GanttTable({
                     const isMainEvent = (month as any).isMain
                     return (
                       <td key={month.id} style={{
-                        height:26, borderBottom:'1px solid #E2E8F0',
+                        height:26, borderBottom:'1px solid #EEF2F7',
                         background: isMainEvent ? 'rgba(220,38,38,.04)' : isCurrentMonth ? 'rgba(37,99,235,.04)' : 'white',
-                        borderLeft:'1px solid #CBD5E1'
                       }}></td>
                     )
                   })}
