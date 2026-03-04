@@ -266,7 +266,7 @@ export function GanttTable({
           }, { overdue: 0, delayed: 0 })
 
           const isSub = section.is_sub
-          const secBg = isSub ? '#ede8fc' : '#dce5f4'
+          const secBg = isSub ? '#F3F0FD' : '#EEF2F8'
           const secAccentColor = section.color || (isSub ? '#8B5CF6' : '#64748B')
           const secBorder = `3px solid ${secAccentColor}`
           const isSecHovered = hoveredSectionId === section.id
@@ -361,8 +361,8 @@ export function GanttTable({
                   return (
                     <td key={month.id} style={{
                       height:38,
-                      background: isMainEvent ? 'rgba(220,38,38,.06)' : isCurrentMonth ? 'rgba(37,99,235,.06)' : secBg,
-                      borderTop: secBorder, borderBottom:'1px solid #BDC9D9',
+                      background: isMainEvent ? 'rgba(220,38,38,.04)' : isCurrentMonth ? 'rgba(37,99,235,.05)' : secBg,
+                      borderTop: secBorder, borderBottom:'1px solid #BDC9D9', borderLeft:'1px solid #E4EBF2',
                     }}></td>
                   )
                 })}
@@ -380,14 +380,14 @@ export function GanttTable({
                 // 完了タスク判定
                 const isDone = task.cells.some(c => c.content === '済')
 
-                // セクションカラーを行背景に反映（約12%透明度）
-                const sectionTint = section.color ? `${section.color}1F` : '#F8FAFC'
+                // タスク行は白ベース（セクションカラー着色なし）
+                const sectionTint = '#FFFFFF'
 
                 // アラートに応じた色設定
-                const rowBg    = alert === 'overdue' ? 'rgba(239,68,68,.05)'  : alert === 'delayed' ? 'rgba(245,158,11,.05)' : sectionTint
+                const rowBg    = alert === 'overdue' ? 'rgba(239,68,68,.04)'  : alert === 'delayed' ? 'rgba(245,158,11,.04)' : sectionTint
                 const barColor = alert === 'overdue' ? '#EF4444'              : alert === 'delayed' ? '#F59E0B'              : (section.color || '#94a3b8')
                 // ホバー時の行背景
-                const hoverTaskBg = alert === 'overdue' ? 'rgba(239,68,68,.11)' : alert === 'delayed' ? 'rgba(245,158,11,.11)' : '#EFF6FF'
+                const hoverTaskBg = alert === 'overdue' ? 'rgba(239,68,68,.08)' : alert === 'delayed' ? 'rgba(245,158,11,.08)' : '#F0F7FF'
 
                 const isDragOver = dragOverInfo?.taskId === task.id
                 const dropShadow = isDragOver
@@ -524,24 +524,24 @@ export function GanttTable({
 
                       // 遅延・期限切れの月セルは背景を強調
                       const cellAlertBg = (() => {
-                        if (isMainEvent) return 'rgba(220,38,38,.04)'
-                        if (isCurrentMonth) return 'rgba(37,99,235,.04)'
+                        if (isMainEvent) return 'rgba(220,38,38,.03)'
+                        if (isCurrentMonth) return 'rgba(37,99,235,.03)'
                         if (alert !== 'ok' && alert !== 'done' && month.id < CURRENT_MONTH_ID && cell?.content === '予定')
-                          return 'rgba(245,158,11,.08)'
-                        return sectionTint
+                          return 'rgba(245,158,11,.06)'
+                        return '#FFFFFF'
                       })()
                       // ホバー時の月セル背景
                       const monthHoverBg = isMainEvent
-                        ? 'rgba(220,38,38,.09)'
+                        ? 'rgba(220,38,38,.07)'
                         : isCurrentMonth
-                          ? 'rgba(37,99,235,.13)'
-                          : alert === 'overdue' ? 'rgba(239,68,68,.09)' : alert === 'delayed' ? 'rgba(245,158,11,.09)' : '#EFF6FF'
+                          ? 'rgba(37,99,235,.10)'
+                          : alert === 'overdue' ? 'rgba(239,68,68,.07)' : alert === 'delayed' ? 'rgba(245,158,11,.07)' : '#EFF6FF'
 
                       return (
                         <td key={month.id}
                           onClick={() => onCellClick(task.id, month.id, task.name, section.name, cell || spanningCell || null, section.id)}
                           style={{
-                            height:46, borderBottom:'1px solid #BDC9D9',
+                            height:46, borderBottom:'1px solid #BDC9D9', borderLeft:'1px solid #E4EBF2',
                             textAlign:'center', cursor:'pointer', verticalAlign:'middle',
                             minWidth:86, position:'relative',
                             background: isHovered ? monthHoverBg : cellAlertBg,
@@ -587,8 +587,8 @@ export function GanttTable({
                     const isMainEvent = (month as any).isMain
                     return (
                       <td key={month.id} style={{
-                        height:26, borderBottom:'1px solid #BDC9D9',
-                        background: isMainEvent ? 'rgba(220,38,38,.04)' : isCurrentMonth ? 'rgba(37,99,235,.04)' : 'white',
+                        height:26, borderBottom:'1px solid #BDC9D9', borderLeft:'1px solid #E4EBF2',
+                        background: isMainEvent ? 'rgba(220,38,38,.03)' : isCurrentMonth ? 'rgba(37,99,235,.03)' : 'white',
                       }}></td>
                     )
                   })}
