@@ -123,7 +123,6 @@ export function MilestonePopover({ monthId, milestonesForMonth, anchor, onClose,
                   </div>
                 ) : (
                   <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-                    <div style={{ width:7, height:7, background: m.is_main ? '#f87171' : '#C9A84C', transform:'rotate(45deg)', borderRadius:1, flexShrink:0 }}></div>
                     <span style={{ flex:1, fontSize:'.78rem', color: m.is_main ? '#ef4444' : '#334155', fontWeight: m.is_main ? 700 : 400, wordBreak:'break-all' }}>{m.text}</span>
                     <button onClick={() => startEdit(m)} style={{ flexShrink:0, padding:'2px 7px', background:'none', border:'1px solid #E2E8F0', borderRadius:4, cursor:'pointer', color:'#64748B', fontSize:'.65rem', fontFamily:'inherit' }}>編集</button>
                     <button onClick={() => handleDelete(m.id)} disabled={loading} style={{ flexShrink:0, padding:'2px 7px', background:'#FEF2F2', border:'1px solid #FCA5A5', borderRadius:4, cursor:'pointer', color:'#EF4444', fontSize:'.65rem', fontFamily:'inherit' }}>🗑</button>

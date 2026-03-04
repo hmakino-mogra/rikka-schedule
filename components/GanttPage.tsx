@@ -540,7 +540,9 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
           anchor={milestonePopover.anchor}
           onClose={() => setMilestonePopover(null)}
           onAdded={m => {
-            setMilestones(prev => [...prev, m])
+            setMilestones(prev =>
+              prev.find(x => x.id === m.id) ? prev : [...prev, m]
+            )
           }}
           onUpdated={m => {
             setMilestones(prev => prev.map(x => x.id === m.id ? m : x))
