@@ -547,7 +547,11 @@ export function GanttTable({
 
                       return (
                         <td key={month.id}
-                          onClick={() => onCellClick(task.id, month.id, task.name, section.name, cell || spanningCell || null, section.id)}
+                          onClick={() => {
+                            // 跨ぎバー（spanningCell）をクリックした場合は元のmonth_idを使う
+                            const editMonthId = cell ? month.id : (spanningCell ? spanningCell.month_id : month.id)
+                            onCellClick(task.id, editMonthId, task.name, section.name, cell || spanningCell || null, section.id)
+                          }}
                           style={{
                             height:ROW_H, borderBottom:'1px solid #BDC9D9', borderLeft:'1px solid #E4EBF2',
                             textAlign:'center', cursor:'pointer', verticalAlign:'middle',
