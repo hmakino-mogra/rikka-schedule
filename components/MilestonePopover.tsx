@@ -143,7 +143,6 @@ export function MilestonePopover({ monthId, milestonesForMonth, anchor, onClose,
             <input
               value={newText}
               onChange={e => setNewText(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') handleAdd() }}
               placeholder="イベント名..."
               style={{ padding:'6px 8px', fontSize:'.78rem', border:'1px solid #CBD5E1', borderRadius:6, fontFamily:'inherit', outline:'none', width:'100%', boxSizing:'border-box' }}
             />
