@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
-import { SectionWithTasks, TaskWithCells, TaskCell, Milestone, MONTHS, CURRENT_MONTH_ID } from '@/lib/database.types'
+import { SectionWithTasks, TaskWithCells, TaskCell, Milestone, Comment, MONTHS, CURRENT_MONTH_ID } from '@/lib/database.types'
 import { useIsMobile } from '@/lib/useIsMobile'
 import { GanttTable } from './GanttTable'
 import { EditPanel } from './EditPanel'
@@ -14,9 +14,10 @@ import { DatePopover } from './DatePopover'
 interface GanttPageProps {
   initialSections: SectionWithTasks[]
   initialMilestones: Milestone[]
+  initialCommentMap?: Record<string, Comment[]>
 }
 
-export function GanttPage({ initialSections, initialMilestones }: GanttPageProps) {
+export function GanttPage({ initialSections, initialMilestones, initialCommentMap = {} }: GanttPageProps) {
   const isMobile = useIsMobile()
   const [sections, setSections] = useState<SectionWithTasks[]>(initialSections)
   const [milestones, setMilestones] = useState<Milestone[]>(initialMilestones)
@@ -472,6 +473,7 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
         onSectionDelete={handleSectionDelete}
         onSectionMove={handleSectionMove}
         onTaskReorder={handleTaskReorder}
+        commentMap={initialCommentMap}
       />
 
       {/* Edit Panel */}

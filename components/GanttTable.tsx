@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { SectionWithTasks, TaskWithCells, TaskCell, Milestone, MONTHS, CURRENT_MONTH_ID, fmtDate } from '@/lib/database.types'
+import { SectionWithTasks, TaskWithCells, TaskCell, Milestone, Comment, MONTHS, CURRENT_MONTH_ID, fmtDate } from '@/lib/database.types'
 import { useIsMobile } from '@/lib/useIsMobile'
 
 interface Props {
@@ -19,6 +19,7 @@ interface Props {
   onSectionDelete: (sectionId: string) => void
   onSectionMove: (sectionId: string, direction: 'up' | 'down') => void
   onTaskReorder: (sectionId: string, fromTaskId: string, toTaskId: string, insertBefore: boolean) => void
+  commentMap?: Record<string, Comment[]>
 }
 
 // ── 令和日付文字列 (例: "R7.12.19") をパース ──────────────────
@@ -77,6 +78,7 @@ export function GanttTable({
   onSectionDelete,
   onSectionMove,
   onTaskReorder,
+  commentMap = {},
 }: Props) {
   const isMobile = useIsMobile()
 
@@ -96,6 +98,7 @@ export function GanttTable({
   const [editingSectionName, setEditingSectionName] = useState('')
   const [hoveredTaskKey, setHoveredTaskKey] = useState<string | null>(null)
   const [hoveredSectionId, setHoveredSectionId] = useState<string | null>(null)
+  const [hoveredCellKey, setHoveredCellKey] = useState<string | null>(null)
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null)
   const [dragOverInfo, setDragOverInfo] = useState<{ taskId: string; position: 'before' | 'after' } | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -195,6 +198,21 @@ export function GanttTable({
           }}>
             👤 {cell.assignee}
           </span>
+        )}
+        {/* メモ・コメントインジケーター */}
+        {(cell.memo || (commentMap[`${cell.task_id}-${cell.month_id}`]?.length ?? 0) > 0) && (
+          <div style={{ display:'flex', gap:3, alignItems:'center', marginTop:1 }}>
+            {cell.memo && (
+              <span style={{ fontSize:'.58rem', background:'#FEF3C7', color:'#92400E', borderRadius:3, padding:'1px 4px', lineHeight:1.3, fontWeight:600 }}>
+                📝
+              </span>
+            )}
+            {(commentMap[`${cell.task_id}-${cell.month_id}`]?.length ?? 0) > 0 && (
+              <span style={{ fontSize:'.58rem', background:'#EFF6FF', color:'#1D4ED8', borderRadius:3, padding:'1px 4px', lineHeight:1.3, fontWeight:600 }}>
+                💬 {commentMap[`${cell.task_id}-${cell.month_id}`].length}
+              </span>
+            )}
+          </div>
         )}
       </div>
     )
@@ -545,6 +563,12 @@ export function GanttTable({
                           ? 'rgba(37,99,235,.10)'
                           : alert === 'overdue' ? 'rgba(239,68,68,.07)' : alert === 'delayed' ? 'rgba(245,158,11,.07)' : '#EFF6FF'
 
+                      const cellKey = `${task.id}-${month.id}`
+                      const cellComments = commentMap[cellKey] ?? []
+                      const hasMemo = !!cell?.memo
+                      const hasTooltip = cell && (hasMemo || cellComments.length > 0)
+                      const isTooltipVisible = hoveredCellKey === cellKey && hasTooltip
+
                       return (
                         <td key={month.id}
                           onClick={() => {
@@ -552,6 +576,8 @@ export function GanttTable({
                             const editMonthId = cell ? month.id : (spanningCell ? spanningCell.month_id : month.id)
                             onCellClick(task.id, editMonthId, task.name, section.name, cell || spanningCell || null, section.id)
                           }}
+                          onMouseEnter={() => hasTooltip && setHoveredCellKey(cellKey)}
+                          onMouseLeave={() => setHoveredCellKey(null)}
                           style={{
                             height:ROW_H, borderBottom:'1px solid #BDC9D9', borderLeft:'1px solid #E4EBF2',
                             textAlign:'center', cursor:'pointer', verticalAlign:'middle',
@@ -575,6 +601,46 @@ export function GanttTable({
                           {/* 空セルのホバーヒント */}
                           {!cell && !spanningCell && isHovered && (
                             <span style={{ fontSize:'.72rem', color:'#CBD5E1', userSelect:'none', lineHeight:1 }}>＋</span>
+                          )}
+                          {/* メモ・コメントホバーツールチップ */}
+                          {isTooltipVisible && (
+                            <div
+                              onClick={e => e.stopPropagation()}
+                              style={{
+                                position:'absolute', bottom:'calc(100% + 6px)', left:'50%',
+                                transform:'translateX(-50%)',
+                                background:'#1E293B', color:'#F1F5F9',
+                                borderRadius:8, padding:'8px 10px',
+                                fontSize:'.72rem', lineHeight:1.5,
+                                whiteSpace:'pre-wrap', textAlign:'left',
+                                maxWidth:220, minWidth:120,
+                                zIndex:500,
+                                boxShadow:'0 4px 16px rgba(0,0,0,.28)',
+                                pointerEvents:'none',
+                              }}
+                            >
+                              {hasMemo && (
+                                <div>
+                                  <div style={{ fontSize:'.62rem', color:'#94A3B8', fontWeight:700, marginBottom:3 }}>📝 メモ</div>
+                                  <div style={{ color:'#F8FAFC' }}>{cell!.memo}</div>
+                                </div>
+                              )}
+                              {cellComments.length > 0 && (
+                                <div style={{ marginTop: hasMemo ? 8 : 0 }}>
+                                  <div style={{ fontSize:'.62rem', color:'#94A3B8', fontWeight:700, marginBottom:3 }}>💬 コメント ({cellComments.length}件)</div>
+                                  <div style={{ display:'flex', flexDirection:'column', gap:5, maxHeight:160, overflowY:'auto' }}>
+                                    {cellComments.map(c => (
+                                      <div key={c.id} style={{ borderTop:'1px solid rgba(255,255,255,.1)', paddingTop:4 }}>
+                                        <div style={{ fontSize:'.62rem', color:'#94A3B8', marginBottom:2 }}>
+                                          {c.author} · {new Date(c.created_at).toLocaleDateString('ja-JP', { month:'numeric', day:'numeric' })}
+                                        </div>
+                                        <div style={{ color:'#F8FAFC' }}>{c.text}</div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           )}
                         </td>
                       )
