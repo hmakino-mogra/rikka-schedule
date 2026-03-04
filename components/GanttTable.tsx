@@ -192,7 +192,7 @@ export function GanttTable({
   return (
     <div
       ref={scrollRef}
-      style={{ height:'calc(100vh - 94px)', overflow:'auto', position:'relative', zIndex:0 }}
+      style={{ height:'calc(100vh - 104px)', overflow:'auto', position:'relative', zIndex:0 }}
       className="custom-scroll"
     >
       <table style={{ borderCollapse:'collapse', width:'max-content', minWidth:'100%' }}>

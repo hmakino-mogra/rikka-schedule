@@ -306,26 +306,26 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
   return (
     <div className="w-full h-screen flex flex-col bg-white">
       {/* Header Row 1 */}
-      <div style={{ height:56, background:'#0D2137', color:'white', display:'flex', alignItems:'center', padding:'0 18px', gap:12, flexShrink:0, boxShadow:'0 2px 14px rgba(0,0,0,.35)', position:'relative' }}>
-        <div style={{ width:32, height:32, borderRadius:8, background:'linear-gradient(135deg,#E8C96A,#9a7230)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, overflow:'hidden' }}>
+      <div style={{ height:66, background:'#0D2137', color:'white', display:'flex', alignItems:'center', padding:'0 20px', gap:14, flexShrink:0, boxShadow:'0 2px 14px rgba(0,0,0,.35)', position:'relative' }}>
+        <div style={{ width:38, height:38, borderRadius:9, background:'linear-gradient(135deg,#E8C96A,#9a7230)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, overflow:'hidden' }}>
           <img
             src="/logo.jpg"
             alt="logo"
             style={{ width:'100%', height:'100%', objectFit:'cover' }}
             onError={e => { (e.currentTarget as HTMLImageElement).style.display='none'; (e.currentTarget.nextSibling as HTMLElement).style.display='flex' }}
           />
-          <span style={{ display:'none', width:'100%', height:'100%', alignItems:'center', justifyContent:'center', fontSize:'1rem' }}>🌸</span>
+          <span style={{ display:'none', width:'100%', height:'100%', alignItems:'center', justifyContent:'center', fontSize:'1.1rem' }}>🌸</span>
         </div>
-        <div style={{ display:'flex', flexDirection:'column', gap:1 }}>
-          <div style={{ fontSize:'.9rem', fontWeight:700, color:'#fff', lineHeight:1.2 }}>51期 六華同窓会</div>
-          <div style={{ fontSize:'.63rem', color:'rgba(255,255,255,.42)', lineHeight:1 }}>スケジュール管理 ｜ 執行部</div>
+        <div style={{ display:'flex', flexDirection:'column', gap:2 }}>
+          <div style={{ fontSize:'.98rem', fontWeight:700, color:'#fff', lineHeight:1.2 }}>51期 六華同窓会</div>
+          <div style={{ fontSize:'.67rem', color:'rgba(255,255,255,.42)', lineHeight:1 }}>スケジュール管理 ｜ 執行部</div>
         </div>
-        <div style={{ width:1, height:20, background:'rgba(255,255,255,.12)', flexShrink:0 }}></div>
-        <div style={{ background:'rgba(201,168,76,.13)', border:'1px solid rgba(201,168,76,.3)', borderRadius:7, padding:'5px 11px', color:'#E8C96A', fontSize:'.73rem', whiteSpace:'nowrap', display:'flex', alignItems:'center', gap:5 }}>
-          🎉 六華同窓会まで <span style={{ fontSize:'1.05rem', fontWeight:700 }}>{daysUntilEvent}</span> 日
+        <div style={{ width:1, height:24, background:'rgba(255,255,255,.12)', flexShrink:0 }}></div>
+        <div style={{ background:'rgba(201,168,76,.13)', border:'1px solid rgba(201,168,76,.3)', borderRadius:8, padding:'7px 13px', color:'#E8C96A', fontSize:'.76rem', whiteSpace:'nowrap', display:'flex', alignItems:'center', gap:5 }}>
+          🎉 六華同窓会まで <span style={{ fontSize:'1.1rem', fontWeight:700 }}>{daysUntilEvent}</span> 日
         </div>
-        <div style={{ background:'rgba(96,165,250,.1)', border:'1px solid rgba(96,165,250,.3)', borderRadius:7, padding:'5px 11px', color:'#93C5FD', fontSize:'.73rem', whiteSpace:'nowrap', display:'flex', alignItems:'center', gap:5 }}>
-          🗼 東京六華まで <span style={{ fontSize:'1.05rem', fontWeight:700 }}>{daysUntilTokyo}</span> 日
+        <div style={{ background:'rgba(96,165,250,.1)', border:'1px solid rgba(96,165,250,.3)', borderRadius:8, padding:'7px 13px', color:'#93C5FD', fontSize:'.76rem', whiteSpace:'nowrap', display:'flex', alignItems:'center', gap:5 }}>
+          🗼 東京六華まで <span style={{ fontSize:'1.1rem', fontWeight:700 }}>{daysUntilTokyo}</span> 日
         </div>
         <div style={{ flex:1 }}></div>
         <div style={{ fontSize:'.72rem', color:'rgba(255,255,255,.55)', whiteSpace:'nowrap' }}>
