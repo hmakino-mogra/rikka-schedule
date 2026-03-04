@@ -237,10 +237,7 @@ export function GanttTable({
                   {monthMilestones.length > 0 ? (
                     <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:3, padding:'3px 4px', overflowY:'auto', maxHeight:56 }}>
                       {monthMilestones.map(ms => (
-                        <div key={ms.id} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:1 }}>
-                          <div style={{ width:7, height:7, background: ms.is_main ? '#f87171' : '#C9A84C', transform:'rotate(45deg)', borderRadius:1, flexShrink:0 }}></div>
-                          <div style={{ fontSize:'.63rem', color: ms.is_main ? '#fca5a5' : 'rgba(232,201,106,.9)', lineHeight:1.3, textAlign:'center', maxWidth:82, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{ms.text}</div>
-                        </div>
+                        <div key={ms.id} style={{ fontSize:'.63rem', color: ms.is_main ? '#fca5a5' : 'rgba(232,201,106,.9)', lineHeight:1.4, textAlign:'center', maxWidth:82, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{ms.text}</div>
                       ))}
                     </div>
                   ) : (
