@@ -15,3 +15,20 @@
   background: #94a3b8;
   border-radius: 4px;
 }
+
+/* ボトムシートのスライドアップアニメーション */
+@keyframes slideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* スマホ用タッチ最適化 */
+@media (max-width: 767px) {
+  input, button, select {
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* スクロールバーをモバイルで非表示 */
+  .custom-scroll::-webkit-scrollbar {
+    display: none;
+  }
+}

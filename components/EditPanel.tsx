@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { TaskCell, Comment, SectionWithTasks, toReiwa, MONTHS } from '@/lib/database.types'
+import { useIsMobile } from '@/lib/useIsMobile'
 
 interface Props {
   taskId: string
@@ -26,6 +27,7 @@ export function EditPanel({
   taskId, monthId, taskName, secName, sectionId,
   cell, sections, taskLinkedSectionIds, onClose, onSaved, onDeleted, onTaskDeleted, onSectionChange, onLinkedSectionsChanged, onDueDateChanged
 }: Props) {
+  const isMobile = useIsMobile()
   const [status, setStatus] = useState(cell?.content || '')
   const [assignee, setAssignee] = useState(cell?.assignee || '')
   const [cellDate, setCellDate] = useState(cell?.cell_date || '')
@@ -156,11 +158,39 @@ export function EditPanel({
         onClick={onClose}
       />
 
-      {/* Panel */}
-      <div style={{ position:'fixed', right:0, top:0, width:420, height:'100vh', background:'white', boxShadow:'-8px 0 32px rgba(0,0,0,.12)', zIndex:200, display:'flex', flexDirection:'column', borderLeft:'1px solid #E2E8F0' }}>
+      {/* Panel — モバイル: ボトムシート / デスクトップ: 右サイドパネル */}
+      <div style={
+        isMobile
+          ? {
+              position:'fixed', bottom:0, left:0, right:0,
+              height:'88dvh', maxHeight:'88dvh',
+              background:'white',
+              boxShadow:'0 -8px 40px rgba(0,0,0,.22)',
+              zIndex:200,
+              display:'flex', flexDirection:'column',
+              borderRadius:'18px 18px 0 0',
+              overflow:'hidden',
+              animation:'slideUp .22s ease-out',
+            }
+          : {
+              position:'fixed', right:0, top:0, width:420, height:'100vh',
+              background:'white',
+              boxShadow:'-8px 0 32px rgba(0,0,0,.12)',
+              zIndex:200,
+              display:'flex', flexDirection:'column',
+              borderLeft:'1px solid #E2E8F0',
+            }
+      }>
+
+        {/* ボトムシートハンドル（モバイルのみ） */}
+        {isMobile && (
+          <div style={{ display:'flex', justifyContent:'center', padding:'10px 0 4px', flexShrink:0, background:'#0D2137', cursor:'pointer' }} onClick={onClose}>
+            <div style={{ width:40, height:4, borderRadius:2, background:'rgba(255,255,255,.3)' }}></div>
+          </div>
+        )}
 
         {/* Header */}
-        <div style={{ padding:'16px 16px 12px', borderBottom:'1px solid #E2E8F0', flexShrink:0, background:'#0D2137' }}>
+        <div style={{ padding: isMobile ? '10px 14px 10px' : '16px 16px 12px', borderBottom:'1px solid #E2E8F0', flexShrink:0, background:'#0D2137' }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
             <span style={{ fontSize:'.65rem', fontWeight:700, color:'rgba(255,255,255,.5)', textTransform:'uppercase', letterSpacing:'.05em' }}>{secName}</span>
             <button onClick={onClose} style={{ width:26, height:26, borderRadius:6, background:'rgba(255,255,255,.12)', border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'.78rem', color:'rgba(255,255,255,.7)', fontFamily:'inherit' }}>✕</button>

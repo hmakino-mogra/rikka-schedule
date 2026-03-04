@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { SectionWithTasks, TaskWithCells, TaskCell, Milestone, MONTHS, CURRENT_MONTH_ID } from '@/lib/database.types'
+import { useIsMobile } from '@/lib/useIsMobile'
 import { GanttTable } from './GanttTable'
 import { EditPanel } from './EditPanel'
 import { AddTaskModal } from './AddTaskModal'
@@ -16,6 +17,7 @@ interface GanttPageProps {
 }
 
 export function GanttPage({ initialSections, initialMilestones }: GanttPageProps) {
+  const isMobile = useIsMobile()
   const [sections, setSections] = useState<SectionWithTasks[]>(initialSections)
   const [milestones, setMilestones] = useState<Milestone[]>(initialMilestones)
   const [editPanel, setEditPanel] = useState<{
@@ -304,66 +306,83 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
   }
 
   return (
-    <div className="w-full h-screen flex flex-col bg-white">
-      {/* Header Row 1 */}
-      <div style={{ height:66, background:'#0D2137', color:'white', display:'flex', alignItems:'center', padding:'0 20px', gap:14, flexShrink:0, boxShadow:'0 2px 14px rgba(0,0,0,.35)', position:'relative' }}>
-        <div style={{ width:38, height:38, borderRadius:9, background:'linear-gradient(135deg,#E8C96A,#9a7230)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, overflow:'hidden' }}>
+    <div style={{ width:'100%', height:'100dvh', display:'flex', flexDirection:'column', background:'white', overflow:'hidden' }}>
+      {/* ── Header Row 1 ── */}
+      <div style={{ height: isMobile ? 52 : 66, background:'#0D2137', color:'white', display:'flex', alignItems:'center', padding: isMobile ? '0 12px' : '0 20px', gap: isMobile ? 8 : 14, flexShrink:0, boxShadow:'0 2px 14px rgba(0,0,0,.35)', position:'relative' }}>
+        {/* ロゴ */}
+        <div style={{ width: isMobile ? 32 : 38, height: isMobile ? 32 : 38, borderRadius: isMobile ? 8 : 9, background:'linear-gradient(135deg,#E8C96A,#9a7230)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, overflow:'hidden' }}>
           <img
             src="/logo.jpg"
             alt="logo"
             style={{ width:'100%', height:'100%', objectFit:'cover' }}
             onError={e => { (e.currentTarget as HTMLImageElement).style.display='none'; (e.currentTarget.nextSibling as HTMLElement).style.display='flex' }}
           />
-          <span style={{ display:'none', width:'100%', height:'100%', alignItems:'center', justifyContent:'center', fontSize:'1.1rem' }}>🌸</span>
+          <span style={{ display:'none', width:'100%', height:'100%', alignItems:'center', justifyContent:'center', fontSize: isMobile ? '.9rem' : '1.1rem' }}>🌸</span>
         </div>
-        <div style={{ display:'flex', flexDirection:'column', gap:2 }}>
-          <div style={{ fontSize:'.98rem', fontWeight:700, color:'#fff', lineHeight:1.2 }}>51期 六華同窓会</div>
-          <div style={{ fontSize:'.67rem', color:'rgba(255,255,255,.42)', lineHeight:1 }}>スケジュール管理 ｜ 執行部</div>
+
+        {/* タイトル */}
+        <div style={{ display:'flex', flexDirection:'column', gap: isMobile ? 1 : 2, flexShrink:0 }}>
+          <div style={{ fontSize: isMobile ? '.8rem' : '.98rem', fontWeight:700, color:'#fff', lineHeight:1.2, whiteSpace:'nowrap' }}>51期 六華同窓会</div>
+          {!isMobile && <div style={{ fontSize:'.67rem', color:'rgba(255,255,255,.42)', lineHeight:1 }}>スケジュール管理 ｜ 執行部</div>}
         </div>
-        <div style={{ width:1, height:24, background:'rgba(255,255,255,.12)', flexShrink:0 }}></div>
-        <div style={{ background:'rgba(201,168,76,.13)', border:'1px solid rgba(201,168,76,.3)', borderRadius:8, padding:'7px 13px', color:'#E8C96A', fontSize:'.76rem', whiteSpace:'nowrap', display:'flex', alignItems:'center', gap:5 }}>
-          🎉 六華同窓会まで <span style={{ fontSize:'1.1rem', fontWeight:700 }}>{daysUntilEvent}</span> 日
+
+        {!isMobile && <div style={{ width:1, height:24, background:'rgba(255,255,255,.12)', flexShrink:0 }}></div>}
+
+        {/* カウントダウン */}
+        <div style={{ background:'rgba(201,168,76,.13)', border:'1px solid rgba(201,168,76,.3)', borderRadius: isMobile ? 6 : 8, padding: isMobile ? '4px 8px' : '7px 13px', color:'#E8C96A', fontSize: isMobile ? '.64rem' : '.76rem', whiteSpace:'nowrap', display:'flex', alignItems:'center', gap: isMobile ? 3 : 5 }}>
+          🎉{!isMobile && ' 六華同窓会まで'} <span style={{ fontSize: isMobile ? '.88rem' : '1.1rem', fontWeight:700 }}>{daysUntilEvent}</span> 日
         </div>
-        <div style={{ background:'rgba(96,165,250,.1)', border:'1px solid rgba(96,165,250,.3)', borderRadius:8, padding:'7px 13px', color:'#93C5FD', fontSize:'.76rem', whiteSpace:'nowrap', display:'flex', alignItems:'center', gap:5 }}>
-          🗼 東京六華まで <span style={{ fontSize:'1.1rem', fontWeight:700 }}>{daysUntilTokyo}</span> 日
+        <div style={{ background:'rgba(96,165,250,.1)', border:'1px solid rgba(96,165,250,.3)', borderRadius: isMobile ? 6 : 8, padding: isMobile ? '4px 8px' : '7px 13px', color:'#93C5FD', fontSize: isMobile ? '.64rem' : '.76rem', whiteSpace:'nowrap', display:'flex', alignItems:'center', gap: isMobile ? 3 : 5 }}>
+          🗼{!isMobile && ' 東京六華まで'} <span style={{ fontSize: isMobile ? '.88rem' : '1.1rem', fontWeight:700 }}>{daysUntilTokyo}</span> 日
         </div>
+
         <div style={{ flex:1 }}></div>
-        <div style={{ fontSize:'.72rem', color:'rgba(255,255,255,.55)', whiteSpace:'nowrap' }}>
-          進捗: <span style={{ color:'#E8C96A', fontWeight:700 }}>{completedCount}/{totalTasks} ({percentage}%)</span>
-        </div>
+
+        {/* 進捗（デスクトップのみ） */}
+        {!isMobile && (
+          <div style={{ fontSize:'.72rem', color:'rgba(255,255,255,.55)', whiteSpace:'nowrap' }}>
+            進捗: <span style={{ color:'#E8C96A', fontWeight:700 }}>{completedCount}/{totalTasks} ({percentage}%)</span>
+          </div>
+        )}
+
+        {/* セクション追加ボタン */}
         <button
           onClick={() => setAddSectionModal(true)}
-          style={{ display:'flex', alignItems:'center', gap:5, padding:'7px 13px', background:'rgba(201,168,76,.15)', color:'#E8C96A', border:'1px solid rgba(201,168,76,.35)', borderRadius:7, fontSize:'.76rem', fontWeight:700, cursor:'pointer', fontFamily:'inherit', whiteSpace:'nowrap' }}
+          style={{ display:'flex', alignItems:'center', gap: isMobile ? 0 : 5, padding: isMobile ? '6px 10px' : '7px 13px', background:'rgba(201,168,76,.15)', color:'#E8C96A', border:'1px solid rgba(201,168,76,.35)', borderRadius:7, fontSize: isMobile ? '.78rem' : '.76rem', fontWeight:700, cursor:'pointer', fontFamily:'inherit', whiteSpace:'nowrap' }}
+          title="セクション追加"
         >
-          ＋ セクション追加
+          {isMobile ? '＋§' : '＋ セクション追加'}
         </button>
+
+        {/* タスク追加ボタン */}
         <button
           onClick={() => { setAddModalSectionId(undefined); setAddModal(true) }}
-          style={{ display:'flex', alignItems:'center', gap:5, padding:'7px 13px', background:'#C9A84C', color:'#0D2137', border:'none', borderRadius:7, fontSize:'.76rem', fontWeight:700, cursor:'pointer', fontFamily:'inherit', whiteSpace:'nowrap' }}
+          style={{ display:'flex', alignItems:'center', gap: isMobile ? 0 : 5, padding: isMobile ? '6px 12px' : '7px 13px', background:'#C9A84C', color:'#0D2137', border:'none', borderRadius:7, fontSize: isMobile ? '.78rem' : '.76rem', fontWeight:700, cursor:'pointer', fontFamily:'inherit', whiteSpace:'nowrap' }}
+          title="タスク追加"
         >
-          ＋ タスク追加
+          {isMobile ? '＋' : '＋ タスク追加'}
         </button>
       </div>
 
-      {/* Header Row 2 — 検索 / ステータスフィルター */}
-      <div style={{ height:44, display:'flex', alignItems:'center', padding:'0 18px', gap:10, background:'#0a1828', borderTop:'1px solid rgba(255,255,255,.06)', flexShrink:0 }}>
+      {/* ── Header Row 2 — 検索 / フィルター ── */}
+      <div style={{ height: isMobile ? 40 : 44, display:'flex', alignItems:'center', padding: isMobile ? '0 10px' : '0 18px', gap: isMobile ? 6 : 10, background:'#0a1828', borderTop:'1px solid rgba(255,255,255,.06)', flexShrink:0, overflowX: isMobile ? 'auto' : undefined }}>
         {/* 検索 */}
-        <div style={{ position:'relative', flexShrink:0, width:170 }}>
+        <div style={{ position:'relative', flexShrink:0, width: isMobile ? 120 : 170 }}>
           <input
             type="text"
-            placeholder="タスクを検索…"
+            placeholder={isMobile ? '検索…' : 'タスクを検索…'}
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            style={{ width:'100%', padding:'5px 10px 5px 28px', border:'1px solid rgba(255,255,255,.15)', borderRadius:7, background:'rgba(255,255,255,.09)', color:'white', fontSize:'.74rem', fontFamily:'inherit', outline:'none', boxSizing:'border-box' }}
+            style={{ width:'100%', padding:'5px 10px 5px 26px', border:'1px solid rgba(255,255,255,.15)', borderRadius:7, background:'rgba(255,255,255,.09)', color:'white', fontSize: isMobile ? '.7rem' : '.74rem', fontFamily:'inherit', outline:'none', boxSizing:'border-box' }}
           />
-          <span style={{ position:'absolute', left:8, top:'50%', transform:'translateY(-50%)', fontSize:'.72rem', pointerEvents:'none' }}>🔍</span>
+          <span style={{ position:'absolute', left:7, top:'50%', transform:'translateY(-50%)', fontSize:'.7rem', pointerEvents:'none' }}>🔍</span>
         </div>
 
         {/* 区切り線 */}
-        <div style={{ width:1, height:20, background:'rgba(255,255,255,.15)', flexShrink:0 }} />
+        <div style={{ width:1, height:18, background:'rgba(255,255,255,.15)', flexShrink:0 }} />
 
-        {/* ステータスフィルター */}
-        <div style={{ display:'flex', gap:4, flexShrink:0 }}>
+        {/* ステータスフィルター（モバイルは小さく） */}
+        <div style={{ display:'flex', gap: isMobile ? 3 : 4, flexShrink:0 }}>
           {[
             { key:'すべて', label:'すべて' },
             { key:'済',    label:'✓ 済' },
@@ -374,8 +393,10 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
               key={key}
               onClick={() => setCurrentFilter(key)}
               style={{
-                padding:'4px 12px', borderRadius:14, cursor:'pointer', fontFamily:'inherit',
-                fontSize:'.73rem', fontWeight:600, transition:'all .12s', whiteSpace:'nowrap',
+                padding: isMobile ? '3px 7px' : '4px 12px',
+                borderRadius:14, cursor:'pointer', fontFamily:'inherit',
+                fontSize: isMobile ? '.65rem' : '.73rem',
+                fontWeight:600, transition:'all .12s', whiteSpace:'nowrap',
                 border: currentFilter === key ? '1px solid rgba(201,168,76,.5)' : '1px solid rgba(255,255,255,.15)',
                 background: currentFilter === key ? 'rgba(201,168,76,.18)' : 'transparent',
                 color: currentFilter === key ? '#E8C96A' : 'rgba(255,255,255,.55)',
@@ -385,15 +406,17 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
         </div>
 
         {/* 区切り線 */}
-        <div style={{ width:1, height:20, background:'rgba(255,255,255,.15)', flexShrink:0 }} />
+        <div style={{ width:1, height:18, background:'rgba(255,255,255,.15)', flexShrink:0 }} />
 
         {/* 部フィルター（横スクロール対応） */}
-        <div style={{ display:'flex', gap:4, overflowX:'auto', flex:1, alignItems:'center' }}>
+        <div style={{ display:'flex', gap: isMobile ? 3 : 4, overflowX:'auto', flex:1, alignItems:'center' }}>
           <button
             onClick={() => setSectionFilter('すべて')}
             style={{
-              padding:'4px 12px', borderRadius:14, cursor:'pointer', fontFamily:'inherit', flexShrink:0,
-              fontSize:'.73rem', fontWeight:600, transition:'all .12s', whiteSpace:'nowrap',
+              padding: isMobile ? '3px 8px' : '4px 12px',
+              borderRadius:14, cursor:'pointer', fontFamily:'inherit', flexShrink:0,
+              fontSize: isMobile ? '.65rem' : '.73rem',
+              fontWeight:600, transition:'all .12s', whiteSpace:'nowrap',
               border: sectionFilter === 'すべて' ? '1px solid rgba(255,255,255,.4)' : '1px solid rgba(255,255,255,.12)',
               background: sectionFilter === 'すべて' ? 'rgba(255,255,255,.15)' : 'transparent',
               color: sectionFilter === 'すべて' ? 'white' : 'rgba(255,255,255,.5)',
@@ -406,17 +429,19 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
                 key={sec.id}
                 onClick={() => setSectionFilter(isSelected ? 'すべて' : sec.id)}
                 style={{
-                  padding:'4px 12px', borderRadius:14, cursor:'pointer', fontFamily:'inherit', flexShrink:0,
-                  fontSize:'.73rem', fontWeight:600, transition:'all .12s', whiteSpace:'nowrap',
-                  display:'flex', alignItems:'center', gap:5,
+                  padding: isMobile ? '3px 8px' : '4px 12px',
+                  borderRadius:14, cursor:'pointer', fontFamily:'inherit', flexShrink:0,
+                  fontSize: isMobile ? '.65rem' : '.73rem',
+                  fontWeight:600, transition:'all .12s', whiteSpace:'nowrap',
+                  display:'flex', alignItems:'center', gap: isMobile ? 3 : 5,
                   border: isSelected ? `1px solid ${sec.color || '#94a3b8'}` : '1px solid rgba(255,255,255,.12)',
                   background: isSelected ? `${sec.color}28` : 'transparent',
                   color: isSelected ? (sec.color || 'white') : 'rgba(255,255,255,.5)',
                 }}
               >
-                <span style={{ width:6, height:6, borderRadius:'50%', background: sec.color || '#94a3b8', flexShrink:0, display:'inline-block' }}></span>
+                <span style={{ width:5, height:5, borderRadius:'50%', background: sec.color || '#94a3b8', flexShrink:0, display:'inline-block' }}></span>
                 {sec.name}
-                {isSelected && <span style={{ fontSize:'.6rem', marginLeft:1, opacity:.7 }}>✕</span>}
+                {isSelected && <span style={{ fontSize:'.58rem', marginLeft:1, opacity:.7 }}>✕</span>}
               </button>
             )
           })}

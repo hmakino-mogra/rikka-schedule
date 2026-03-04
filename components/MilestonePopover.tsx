@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Milestone } from '@/lib/database.types'
+import { useIsMobile } from '@/lib/useIsMobile'
 
 interface Props {
   monthId: number
@@ -15,6 +16,7 @@ interface Props {
 }
 
 export function MilestonePopover({ monthId, milestonesForMonth, anchor, onClose, onAdded, onUpdated, onDeleted }: Props) {
+  const isMobile = useIsMobile()
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
   const [editIsMain, setEditIsMain] = useState(false)
@@ -76,22 +78,43 @@ export function MilestonePopover({ monthId, milestonesForMonth, anchor, onClose,
   const top = Math.min(anchor.bottom + 8, window.innerHeight - 460)
   const left = Math.min(anchor.left, window.innerWidth - 340)
 
+  const mobileStyle: React.CSSProperties = {
+    position:'fixed', zIndex:200,
+    bottom:0, left:0, right:0,
+    background:'white',
+    borderRadius:'16px 16px 0 0',
+    boxShadow:'0 -8px 32px rgba(0,0,0,.18)',
+    border:'1px solid #E2E8F0',
+    padding:16,
+    display:'flex', flexDirection:'column', gap:10,
+    maxHeight:'70dvh', overflowY:'auto',
+    animation:'slideUp .22s ease-out',
+  }
+
+  const desktopStyle: React.CSSProperties = {
+    position:'fixed', zIndex:200,
+    top:`${top}px`, left:`${left}px`,
+    background:'white', borderRadius:10,
+    boxShadow:'0 8px 32px rgba(0,0,0,.18)',
+    border:'1px solid #E2E8F0',
+    width:320, padding:16,
+    display:'flex', flexDirection:'column', gap:10,
+    maxHeight:480, overflowY:'auto',
+  }
+
   return (
     <>
       <div
-        style={{ position:'fixed', top:0, right:0, bottom:0, left:0, zIndex:150 }}
+        style={{ position:'fixed', top:0, right:0, bottom:0, left:0, zIndex:150, background: isMobile ? 'rgba(0,0,0,.3)' : 'transparent' }}
         onClick={onClose}
       />
-      <div style={{
-        position:'fixed', zIndex:200,
-        top:`${top}px`, left:`${left}px`,
-        background:'white', borderRadius:10,
-        boxShadow:'0 8px 32px rgba(0,0,0,.18)',
-        border:'1px solid #E2E8F0',
-        width:320, padding:16,
-        display:'flex', flexDirection:'column', gap:10,
-        maxHeight:480, overflowY:'auto',
-      }}>
+      {/* ボトムシートハンドル（モバイルのみ） */}
+      {isMobile && (
+        <div style={{ position:'fixed', bottom:0, left:0, right:0, zIndex:201, display:'flex', justifyContent:'center', padding:'10px 0 0', background:'white', borderRadius:'16px 16px 0 0', pointerEvents:'none' }}>
+          <div style={{ width:40, height:4, borderRadius:2, background:'#CBD5E1' }}></div>
+        </div>
+      )}
+      <div style={isMobile ? mobileStyle : desktopStyle}>
         {/* Header */}
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', paddingBottom:10, borderBottom:'1px solid #E2E8F0' }}>
           <h3 style={{ fontWeight:700, color:'#334155', fontSize:'.9rem', margin:0 }}>主なイベント</h3>

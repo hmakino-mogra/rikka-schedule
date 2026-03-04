@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { SectionWithTasks, TaskWithCells, TaskCell, Milestone, MONTHS, CURRENT_MONTH_ID, fmtDate } from '@/lib/database.types'
+import { useIsMobile } from '@/lib/useIsMobile'
 
 interface Props {
   sections: SectionWithTasks[]
@@ -77,6 +78,18 @@ export function GanttTable({
   onSectionMove,
   onTaskReorder,
 }: Props) {
+  const isMobile = useIsMobile()
+
+  // レスポンシブ寸法
+  const TASK_COL_W = isMobile ? 150 : 248
+  const CELL_W     = isMobile ? 70  : 86
+  const ROW_H      = isMobile ? 40  : 46
+  const SEC_H      = isMobile ? 32  : 38
+  const MS_H       = isMobile ? 44  : 60
+  const MONTH_H    = isMobile ? 36  : 42
+  // ヘッダー合計: モバイル 52+40=92、デスクトップ 66+44=110
+  const TABLE_H    = isMobile ? 'calc(100dvh - 92px)' : 'calc(100dvh - 110px)'
+
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null)
   const [editingTaskName, setEditingTaskName] = useState('')
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null)
@@ -93,15 +106,13 @@ export function GanttTable({
       if (!scrollRef.current) return
       const idx = MONTHS.findIndex(m => m.id === CURRENT_MONTH_ID)
       if (idx < 0) return
-      const TASK_COL = 248
-      const CELL_W = 86
-      const targetLeft = TASK_COL + CELL_W * idx
+      const targetLeft = TASK_COL_W + CELL_W * idx
       const containerWidth = scrollRef.current.clientWidth
       const scrollTo = targetLeft - containerWidth / 2 + CELL_W / 2
       scrollRef.current.scrollTo({ left: Math.max(0, scrollTo), behavior: 'smooth' })
     }, 150)
     return () => clearTimeout(timer)
-  }, [])
+  }, [isMobile])
 
   const handleTaskNameDoubleClick = (taskId: string, currentName: string) => {
     setEditingTaskId(taskId)
@@ -192,14 +203,14 @@ export function GanttTable({
   return (
     <div
       ref={scrollRef}
-      style={{ height:'calc(100vh - 104px)', overflow:'auto', position:'relative', zIndex:0 }}
+      style={{ height: TABLE_H, overflow:'auto', position:'relative', zIndex:0 }}
       className="custom-scroll"
     >
       <table style={{ borderCollapse:'collapse', width:'max-content', minWidth:'100%' }}>
         <thead>
           {/* ── Month header row ── */}
           <tr>
-            <th style={{ position:'sticky', left:0, top:0, zIndex:40, background:'#091929', color:'rgba(255,255,255,.3)', fontSize:'.65rem', fontWeight:400, textAlign:'left', padding:'0 14px', minWidth:248, maxWidth:248, height:42, borderRight:'1px solid rgba(255,255,255,.07)' }}>
+            <th style={{ position:'sticky', left:0, top:0, zIndex:40, background:'#091929', color:'rgba(255,255,255,.3)', fontSize: isMobile ? '.58rem' : '.65rem', fontWeight:400, textAlign:'left', padding:'0 10px', minWidth:TASK_COL_W, maxWidth:TASK_COL_W, height:MONTH_H, borderRight:'1px solid rgba(255,255,255,.07)' }}>
               タスク
             </th>
             {MONTHS.map(month => {
@@ -210,9 +221,9 @@ export function GanttTable({
                   position:'sticky', top:0, zIndex:30,
                   background: isMainEvent ? '#7f1d1d' : isCurrentMonth ? '#1e3a8a' : '#091929',
                   color: isMainEvent ? '#fca5a5' : isCurrentMonth ? '#93c5fd' : 'rgba(255,255,255,.7)',
-                  fontSize:'.75rem', fontWeight:600, textAlign:'center',
-                  height:42, borderLeft:'1px solid rgba(255,255,255,.05)',
-                  minWidth:86, whiteSpace:'nowrap', verticalAlign:'middle'
+                  fontSize: isMobile ? '.63rem' : '.75rem', fontWeight:600, textAlign:'center',
+                  height:MONTH_H, borderLeft:'1px solid rgba(255,255,255,.05)',
+                  minWidth:CELL_W, whiteSpace:'nowrap', verticalAlign:'middle'
                 }}>
                   <div>{month.label}</div>
                   {isCurrentMonth && <div style={{ fontSize:'.56rem', color:'#60a5fa', marginTop:1 }}>◀ 今月</div>}
@@ -224,7 +235,7 @@ export function GanttTable({
 
           {/* ── Milestone strip ── */}
           <tr>
-            <td style={{ position:'sticky', left:0, top:42, zIndex:20, background:'#0a1a2b', color:'#E8C96A', fontSize:'.68rem', fontWeight:700, letterSpacing:'.05em', padding:'0 14px', borderRight:'1px solid rgba(255,255,255,.07)', height:60, verticalAlign:'middle', whiteSpace:'nowrap' }}>
+            <td style={{ position:'sticky', left:0, top:MONTH_H, zIndex:20, background:'#0a1a2b', color:'#E8C96A', fontSize: isMobile ? '.6rem' : '.68rem', fontWeight:700, letterSpacing:'.05em', padding: isMobile ? '0 8px' : '0 14px', borderRight:'1px solid rgba(255,255,255,.07)', height:MS_H, verticalAlign:'middle', whiteSpace:'nowrap' }}>
               主なイベント ✏️
             </td>
             {MONTHS.map(month => {
@@ -232,12 +243,12 @@ export function GanttTable({
               return (
                 <td key={month.id}
                   onClick={e => onMilestoneClick(month.id, (e.currentTarget as HTMLElement).getBoundingClientRect())}
-                  style={{ position:'sticky', top:42, zIndex:10, background:'#0c1f33', height:60, verticalAlign:'middle', textAlign:'center', borderBottom:'2px solid rgba(201,168,76,.18)', borderLeft:'1px solid rgba(255,255,255,.04)', cursor:'pointer', transition:'background .12s' }}
+                  style={{ position:'sticky', top:MONTH_H, zIndex:10, background:'#0c1f33', height:MS_H, verticalAlign:'middle', textAlign:'center', borderBottom:'2px solid rgba(201,168,76,.18)', borderLeft:'1px solid rgba(255,255,255,.04)', cursor:'pointer', transition:'background .12s' }}
                 >
                   {monthMilestones.length > 0 ? (
-                    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:3, padding:'3px 4px', overflowY:'auto', maxHeight:56 }}>
+                    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:2, padding:'2px 3px', overflowY:'auto', maxHeight: MS_H - 4 }}>
                       {monthMilestones.map(ms => (
-                        <div key={ms.id} style={{ fontSize:'.63rem', color: ms.is_main ? '#fca5a5' : 'rgba(232,201,106,.9)', lineHeight:1.4, textAlign:'center', maxWidth:82, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{ms.text}</div>
+                        <div key={ms.id} style={{ fontSize: isMobile ? '.56rem' : '.63rem', color: ms.is_main ? '#fca5a5' : 'rgba(232,201,106,.9)', lineHeight:1.35, textAlign:'center', maxWidth: CELL_W - 4, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{ms.text}</div>
                       ))}
                     </div>
                   ) : (
@@ -273,7 +284,7 @@ export function GanttTable({
               {/* ── Section Header ── */}
               <tr>
                 <td
-                  style={{ position:'sticky', left:0, zIndex:8, background: secBg, borderTop: secBorder, borderBottom:'1px solid #BDC9D9', height:38, minWidth:248, maxWidth:248, padding:0 }}
+                  style={{ position:'sticky', left:0, zIndex:8, background: secBg, borderTop: secBorder, borderBottom:'1px solid #BDC9D9', height:SEC_H, minWidth:TASK_COL_W, maxWidth:TASK_COL_W, padding:0 }}
                   onMouseEnter={() => setHoveredSectionId(section.id)}
                   onMouseLeave={() => setHoveredSectionId(null)}
                 >
@@ -294,7 +305,7 @@ export function GanttTable({
                       <span
                         onDoubleClick={() => handleSectionNameDoubleClick(section.id, section.name)}
                         title="ダブルクリックで名前を編集"
-                        style={{ fontSize:'.73rem', fontWeight:800, color:'#1E293B', cursor:'pointer', padding:'2px 3px', borderRadius:3, maxWidth:85, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}
+                        style={{ fontSize: isMobile ? '.65rem' : '.73rem', fontWeight:800, color:'#1E293B', cursor:'pointer', padding:'2px 3px', borderRadius:3, maxWidth: isMobile ? 60 : 85, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}
                       >
                         {section.name}
                       </span>
@@ -357,7 +368,7 @@ export function GanttTable({
                   const isMainEvent = (month as any).isMain
                   return (
                     <td key={month.id} style={{
-                      height:38,
+                      height:SEC_H,
                       background: isMainEvent ? 'rgba(220,38,38,.04)' : isCurrentMonth ? 'rgba(37,99,235,.05)' : secBg,
                       borderTop: secBorder, borderBottom:'1px solid #BDC9D9', borderLeft:'1px solid #E4EBF2',
                     }}></td>
@@ -425,7 +436,7 @@ export function GanttTable({
                     style={{ opacity: draggedTaskId === task.id ? 0.35 : 1, transition:'opacity .1s' }}
                   >
                     <td
-                      style={{ position:'sticky', left:0, zIndex:7, background: isHovered ? hoverTaskBg : rowBg, borderBottom:'1px solid #BDC9D9', minWidth:248, maxWidth:248, borderRight:'1px solid #E8EDF3', padding:0, height:46, transition:'background .1s', boxShadow: dropShadow }}
+                      style={{ position:'sticky', left:0, zIndex:7, background: isHovered ? hoverTaskBg : rowBg, borderBottom:'1px solid #BDC9D9', minWidth:TASK_COL_W, maxWidth:TASK_COL_W, borderRight:'1px solid #E8EDF3', padding:0, height:ROW_H, transition:'background .1s', boxShadow: dropShadow }}
                     >
                       <div style={{ display:'flex', alignItems:'stretch', height:'100%' }}>
                         {/* 左のカラーバー（アラート時は赤/橙） */}
@@ -453,7 +464,7 @@ export function GanttTable({
                                 <span title={isLinkedTask ? '共同担当タスク' : '共同担当部署あり'} style={{ flexShrink:0, fontSize:'.65rem', lineHeight:1 }}>🔗</span>
                               )}
                               <span
-                                style={{ fontSize:'.78rem', color: isDone ? '#94A3B8' : '#334155', textDecoration: isDone ? 'line-through' : 'none', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', flex:1 }}
+                                style={{ fontSize: isMobile ? '.68rem' : '.78rem', color: isDone ? '#94A3B8' : '#334155', textDecoration: isDone ? 'line-through' : 'none', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', flex:1 }}
                                 title={task.name}
                                 onDoubleClick={() => handleTaskNameDoubleClick(task.id, task.name)}
                               >
@@ -538,7 +549,7 @@ export function GanttTable({
                         <td key={month.id}
                           onClick={() => onCellClick(task.id, month.id, task.name, section.name, cell || spanningCell || null, section.id)}
                           style={{
-                            height:46, borderBottom:'1px solid #BDC9D9', borderLeft:'1px solid #E4EBF2',
+                            height:ROW_H, borderBottom:'1px solid #BDC9D9', borderLeft:'1px solid #E4EBF2',
                             textAlign:'center', cursor:'pointer', verticalAlign:'middle',
                             minWidth:86, position:'relative',
                             background: isHovered ? monthHoverBg : cellAlertBg,
@@ -571,7 +582,7 @@ export function GanttTable({
               {/* ── Add Task Row ── */}
               {section.is_open && (
                 <tr>
-                  <td style={{ position:'sticky', left:0, zIndex:7, background:'white', borderBottom:'1px solid #E2E8F0', height:26, minWidth:248, maxWidth:248, padding:0 }}>
+                  <td style={{ position:'sticky', left:0, zIndex:7, background:'white', borderBottom:'1px solid #E2E8F0', height: isMobile ? 24 : 26, minWidth:TASK_COL_W, maxWidth:TASK_COL_W, padding:0 }}>
                     <button
                       onClick={() => onAddTaskToSection(section.id)}
                       style={{ display:'flex', alignItems:'center', gap:4, height:'100%', width:'100%', padding:'0 0 0 18px', background:'none', border:'none', cursor:'pointer', color:'#94A3B8', fontSize:'.7rem', fontFamily:'inherit' }}

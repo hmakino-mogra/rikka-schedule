@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { toReiwa } from '@/lib/database.types'
+import { useIsMobile } from '@/lib/useIsMobile'
 
 interface Props {
   taskId: string
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export function DatePopover({ taskId, currentDate, anchor, onClose, onSaved }: Props) {
+  const isMobile = useIsMobile()
   const [date, setDate] = useState(currentDate || '')
   const [loading, setLoading] = useState(false)
 
@@ -48,30 +50,48 @@ export function DatePopover({ taskId, currentDate, anchor, onClose, onSaved }: P
     : rawTop
   const left = Math.max(margin, Math.min(anchor.left, window.innerWidth - popoverW - margin))
 
+  // モバイル用スタイル
+  const mobilePopoverStyle: React.CSSProperties = {
+    position: 'fixed',
+    bottom: 0, left: 0, right: 0,
+    background: 'white',
+    borderRadius: '16px 16px 0 0',
+    boxShadow: '0 -8px 32px rgba(0,0,0,.18)',
+    border: '1px solid #E2E8F0',
+    zIndex: 300,
+    padding: '20px 16px 32px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 12,
+    animation: 'slideUp .22s ease-out',
+  }
+
+  const desktopPopoverStyle: React.CSSProperties = {
+    position: 'fixed',
+    top,
+    left,
+    width: popoverW,
+    background: 'white',
+    borderRadius: 10,
+    boxShadow: '0 8px 32px rgba(0,0,0,.18)',
+    border: '1px solid #E2E8F0',
+    zIndex: 300,
+    padding: 14,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 10,
+  }
+
   return (
     <>
       {/* Backdrop */}
       <div
-        style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 250 }}
+        style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 250, background: isMobile ? 'rgba(0,0,0,.3)' : 'transparent' }}
         onClick={onClose}
       />
 
       {/* Popover */}
-      <div style={{
-        position: 'fixed',
-        top,
-        left,
-        width: popoverW,
-        background: 'white',
-        borderRadius: 10,
-        boxShadow: '0 8px 32px rgba(0,0,0,.18)',
-        border: '1px solid #E2E8F0',
-        zIndex: 300,
-        padding: 14,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 10,
-      }}>
+      <div style={isMobile ? mobilePopoverStyle : desktopPopoverStyle}>
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 8, borderBottom: '1px solid #E2E8F0' }}>
           <span style={{ fontSize: '.78rem', fontWeight: 700, color: '#334155' }}>📅 期限日</span>
