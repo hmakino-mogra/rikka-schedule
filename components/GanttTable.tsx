@@ -228,16 +228,20 @@ export function GanttTable({
               主なイベント ✏️
             </td>
             {MONTHS.map(month => {
-              const milestone = milestones.find(m => m.month_id === month.id)
+              const monthMilestones = milestones.filter(m => m.month_id === month.id)
               return (
                 <td key={month.id}
                   onClick={e => onMilestoneClick(month.id, (e.currentTarget as HTMLElement).getBoundingClientRect())}
                   style={{ position:'sticky', top:42, zIndex:10, background:'#0c1f33', height:60, verticalAlign:'middle', textAlign:'center', borderBottom:'2px solid rgba(201,168,76,.18)', borderLeft:'1px solid rgba(255,255,255,.04)', cursor:'pointer', transition:'background .12s' }}
                 >
-                  {milestone ? (
-                    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:3, padding:'3px 4px' }}>
-                      <div style={{ width:8, height:8, background: milestone.is_main ? '#f87171' : '#C9A84C', transform:'rotate(45deg)', borderRadius:1, flexShrink:0 }}></div>
-                      <div style={{ fontSize:'.66rem', color: milestone.is_main ? '#fca5a5' : 'rgba(232,201,106,.9)', lineHeight:1.4, whiteSpace:'pre-line', textAlign:'center', maxWidth:80 }}>{milestone.text}</div>
+                  {monthMilestones.length > 0 ? (
+                    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:3, padding:'3px 4px', overflowY:'auto', maxHeight:56 }}>
+                      {monthMilestones.map(ms => (
+                        <div key={ms.id} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:1 }}>
+                          <div style={{ width:7, height:7, background: ms.is_main ? '#f87171' : '#C9A84C', transform:'rotate(45deg)', borderRadius:1, flexShrink:0 }}></div>
+                          <div style={{ fontSize:'.63rem', color: ms.is_main ? '#fca5a5' : 'rgba(232,201,106,.9)', lineHeight:1.3, textAlign:'center', maxWidth:82, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{ms.text}</div>
+                        </div>
+                      ))}
                     </div>
                   ) : (
                     <div style={{ fontSize:'.65rem', color:'rgba(255,255,255,.2)' }}>＋</div>

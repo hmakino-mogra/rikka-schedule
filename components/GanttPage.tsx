@@ -92,14 +92,11 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'milestones' }, (payload: any) => {
         if (payload.eventType === 'DELETE') {
-          setMilestones(prev => prev.filter(m => m.month_id !== payload.old?.month_id))
+          setMilestones(prev => prev.filter(m => m.id !== payload.old?.id))
+        } else if (payload.eventType === 'UPDATE') {
+          setMilestones(prev => prev.map(m => m.id === payload.new?.id ? { ...m, ...payload.new } : m))
         } else {
-          setMilestones(prev => {
-            const exists = prev.find(m => m.month_id === payload.new?.month_id)
-            return exists
-              ? prev.map(m => m.month_id === payload.new?.month_id ? { ...m, ...payload.new } : m)
-              : [...prev, payload.new]
-          })
+          setMilestones(prev => [...prev, payload.new])
         }
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sections' }, (payload: any) => {
@@ -536,19 +533,17 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
       {milestonePopover && (
         <MilestonePopover
           monthId={milestonePopover.monthId}
-          milestone={milestones.find(m => m.month_id === milestonePopover.monthId) || null}
+          milestonesForMonth={milestones.filter(m => m.month_id === milestonePopover.monthId)}
           anchor={milestonePopover.anchor}
           onClose={() => setMilestonePopover(null)}
-          onSaved={m => {
-            setMilestones(prev => {
-              const exists = prev.find(x => x.month_id === m.month_id)
-              return exists ? prev.map(x => x.month_id === m.month_id ? m : x) : [...prev, m]
-            })
-            setMilestonePopover(null)
+          onAdded={m => {
+            setMilestones(prev => [...prev, m])
           }}
-          onDeleted={monthId => {
-            setMilestones(prev => prev.filter(m => m.month_id !== monthId))
-            setMilestonePopover(null)
+          onUpdated={m => {
+            setMilestones(prev => prev.map(x => x.id === m.id ? m : x))
+          }}
+          onDeleted={id => {
+            setMilestones(prev => prev.filter(m => m.id !== id))
           }}
         />
       )}

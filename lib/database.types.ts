@@ -50,13 +50,14 @@ export interface Database {
       }
       milestones: {
         Row: {
+          id: string
           month_id: number
           text: string
           is_main: boolean
           created_at: string
           updated_at: string
         }
-        Insert: Omit<Database['public']['Tables']['milestones']['Row'], 'created_at' | 'updated_at'>
+        Insert: Omit<Database['public']['Tables']['milestones']['Row'], 'id' | 'created_at' | 'updated_at'>
         Update: Partial<Database['public']['Tables']['milestones']['Insert']>
       }
       comments: {
