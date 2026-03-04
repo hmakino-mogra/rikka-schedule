@@ -346,21 +346,24 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
       </div>
 
       {/* Header Row 2 — 検索 / ステータスフィルター */}
-      <div style={{ height:36, display:'flex', alignItems:'center', padding:'0 18px', gap:8, background:'#0a1828', borderTop:'1px solid rgba(255,255,255,.06)', flexShrink:0 }}>
+      <div style={{ height:44, display:'flex', alignItems:'center', padding:'0 18px', gap:10, background:'#0a1828', borderTop:'1px solid rgba(255,255,255,.06)', flexShrink:0 }}>
         {/* 検索 */}
-        <div style={{ position:'relative', flexShrink:0, width:180 }}>
+        <div style={{ position:'relative', flexShrink:0, width:170 }}>
           <input
             type="text"
             placeholder="タスクを検索…"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            style={{ width:'100%', padding:'4px 10px 4px 26px', border:'1px solid rgba(255,255,255,.12)', borderRadius:6, background:'rgba(255,255,255,.08)', color:'white', fontSize:'.72rem', fontFamily:'inherit', outline:'none' }}
+            style={{ width:'100%', padding:'5px 10px 5px 28px', border:'1px solid rgba(255,255,255,.15)', borderRadius:7, background:'rgba(255,255,255,.09)', color:'white', fontSize:'.74rem', fontFamily:'inherit', outline:'none', boxSizing:'border-box' }}
           />
-          <span style={{ position:'absolute', left:7, top:'50%', transform:'translateY(-50%)', fontSize:'.68rem', pointerEvents:'none' }}>🔍</span>
+          <span style={{ position:'absolute', left:8, top:'50%', transform:'translateY(-50%)', fontSize:'.72rem', pointerEvents:'none' }}>🔍</span>
         </div>
 
+        {/* 区切り線 */}
+        <div style={{ width:1, height:20, background:'rgba(255,255,255,.15)', flexShrink:0 }} />
+
         {/* ステータスフィルター */}
-        <div style={{ display:'flex', gap:3, flexShrink:0 }}>
+        <div style={{ display:'flex', gap:4, flexShrink:0 }}>
           {[
             { key:'すべて', label:'すべて' },
             { key:'済',    label:'✓ 済' },
@@ -371,29 +374,29 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
               key={key}
               onClick={() => setCurrentFilter(key)}
               style={{
-                padding:'2px 9px', borderRadius:12, cursor:'pointer', fontFamily:'inherit',
-                fontSize:'.68rem', fontWeight:600, transition:'all .12s',
+                padding:'4px 12px', borderRadius:14, cursor:'pointer', fontFamily:'inherit',
+                fontSize:'.73rem', fontWeight:600, transition:'all .12s', whiteSpace:'nowrap',
                 border: currentFilter === key ? '1px solid rgba(201,168,76,.5)' : '1px solid rgba(255,255,255,.15)',
                 background: currentFilter === key ? 'rgba(201,168,76,.18)' : 'transparent',
-                color: currentFilter === key ? '#E8C96A' : 'rgba(255,255,255,.5)',
+                color: currentFilter === key ? '#E8C96A' : 'rgba(255,255,255,.55)',
               }}
             >{label}</button>
           ))}
         </div>
 
         {/* 区切り線 */}
-        <div style={{ width:1, height:16, background:'rgba(255,255,255,.15)', flexShrink:0 }} />
+        <div style={{ width:1, height:20, background:'rgba(255,255,255,.15)', flexShrink:0 }} />
 
         {/* 部フィルター（横スクロール対応） */}
-        <div style={{ display:'flex', gap:3, overflowX:'auto', flex:1, alignItems:'center' }}>
+        <div style={{ display:'flex', gap:4, overflowX:'auto', flex:1, alignItems:'center' }}>
           <button
             onClick={() => setSectionFilter('すべて')}
             style={{
-              padding:'2px 9px', borderRadius:12, cursor:'pointer', fontFamily:'inherit', flexShrink:0,
-              fontSize:'.68rem', fontWeight:600, transition:'all .12s', whiteSpace:'nowrap',
+              padding:'4px 12px', borderRadius:14, cursor:'pointer', fontFamily:'inherit', flexShrink:0,
+              fontSize:'.73rem', fontWeight:600, transition:'all .12s', whiteSpace:'nowrap',
               border: sectionFilter === 'すべて' ? '1px solid rgba(255,255,255,.4)' : '1px solid rgba(255,255,255,.12)',
               background: sectionFilter === 'すべて' ? 'rgba(255,255,255,.15)' : 'transparent',
-              color: sectionFilter === 'すべて' ? 'white' : 'rgba(255,255,255,.45)',
+              color: sectionFilter === 'すべて' ? 'white' : 'rgba(255,255,255,.5)',
             }}
           >全部署</button>
           {sections.map(sec => {
@@ -403,16 +406,17 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
                 key={sec.id}
                 onClick={() => setSectionFilter(isSelected ? 'すべて' : sec.id)}
                 style={{
-                  padding:'2px 9px', borderRadius:12, cursor:'pointer', fontFamily:'inherit', flexShrink:0,
-                  fontSize:'.68rem', fontWeight:600, transition:'all .12s', whiteSpace:'nowrap',
-                  display:'flex', alignItems:'center', gap:4,
+                  padding:'4px 12px', borderRadius:14, cursor:'pointer', fontFamily:'inherit', flexShrink:0,
+                  fontSize:'.73rem', fontWeight:600, transition:'all .12s', whiteSpace:'nowrap',
+                  display:'flex', alignItems:'center', gap:5,
                   border: isSelected ? `1px solid ${sec.color || '#94a3b8'}` : '1px solid rgba(255,255,255,.12)',
-                  background: isSelected ? `${sec.color}22` : 'transparent',
-                  color: isSelected ? (sec.color || 'white') : 'rgba(255,255,255,.45)',
+                  background: isSelected ? `${sec.color}28` : 'transparent',
+                  color: isSelected ? (sec.color || 'white') : 'rgba(255,255,255,.5)',
                 }}
               >
-                <span style={{ fontSize:'.55rem' }}>●</span>{sec.name}
-                {isSelected && <span style={{ fontSize:'.55rem', marginLeft:1, opacity:.7 }}>✕</span>}
+                <span style={{ width:6, height:6, borderRadius:'50%', background: sec.color || '#94a3b8', flexShrink:0, display:'inline-block' }}></span>
+                {sec.name}
+                {isSelected && <span style={{ fontSize:'.6rem', marginLeft:1, opacity:.7 }}>✕</span>}
               </button>
             )
           })}

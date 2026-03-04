@@ -224,7 +224,7 @@ export function GanttTable({
 
           {/* ── Milestone strip ── */}
           <tr>
-            <td style={{ position:'sticky', left:0, top:42, zIndex:20, background:'#0a1a2b', color:'#E8C96A', fontSize:'.65rem', fontWeight:700, letterSpacing:'.05em', padding:'0 14px', borderRight:'1px solid rgba(255,255,255,.07)', height:52, verticalAlign:'middle', whiteSpace:'nowrap' }}>
+            <td style={{ position:'sticky', left:0, top:42, zIndex:20, background:'#0a1a2b', color:'#E8C96A', fontSize:'.68rem', fontWeight:700, letterSpacing:'.05em', padding:'0 14px', borderRight:'1px solid rgba(255,255,255,.07)', height:60, verticalAlign:'middle', whiteSpace:'nowrap' }}>
               主なイベント ✏️
             </td>
             {MONTHS.map(month => {
@@ -232,15 +232,15 @@ export function GanttTable({
               return (
                 <td key={month.id}
                   onClick={e => onMilestoneClick(month.id, (e.currentTarget as HTMLElement).getBoundingClientRect())}
-                  style={{ position:'sticky', top:42, zIndex:10, background:'#0c1f33', height:52, verticalAlign:'middle', textAlign:'center', borderBottom:'2px solid rgba(201,168,76,.18)', borderLeft:'1px solid rgba(255,255,255,.04)', cursor:'pointer', transition:'background .12s' }}
+                  style={{ position:'sticky', top:42, zIndex:10, background:'#0c1f33', height:60, verticalAlign:'middle', textAlign:'center', borderBottom:'2px solid rgba(201,168,76,.18)', borderLeft:'1px solid rgba(255,255,255,.04)', cursor:'pointer', transition:'background .12s' }}
                 >
                   {milestone ? (
-                    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:3, padding:3 }}>
+                    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:3, padding:'3px 4px' }}>
                       <div style={{ width:8, height:8, background: milestone.is_main ? '#f87171' : '#C9A84C', transform:'rotate(45deg)', borderRadius:1, flexShrink:0 }}></div>
-                      <div style={{ fontSize:'.59rem', color: milestone.is_main ? '#fca5a5' : 'rgba(232,201,106,.85)', lineHeight:1.25, whiteSpace:'pre-line', textAlign:'center' }}>{milestone.text}</div>
+                      <div style={{ fontSize:'.66rem', color: milestone.is_main ? '#fca5a5' : 'rgba(232,201,106,.9)', lineHeight:1.4, whiteSpace:'pre-line', textAlign:'center', maxWidth:80 }}>{milestone.text}</div>
                     </div>
                   ) : (
-                    <div style={{ fontSize:'.6rem', color:'rgba(255,255,255,.2)' }}>＋</div>
+                    <div style={{ fontSize:'.65rem', color:'rgba(255,255,255,.2)' }}>＋</div>
                   )}
                 </td>
               )
@@ -262,8 +262,9 @@ export function GanttTable({
           }, { overdue: 0, delayed: 0 })
 
           const isSub = section.is_sub
-          const secBg = isSub ? '#f0ebff' : '#e4eaf5'
-          const secBorder = isSub ? '1px solid #e9d5ff' : '2px solid #E2E8F0'
+          const secBg = isSub ? '#ede8fc' : '#dce5f4'
+          const secAccentColor = section.color || (isSub ? '#8B5CF6' : '#64748B')
+          const secBorder = `3px solid ${secAccentColor}`
           const isSecHovered = hoveredSectionId === section.id
 
           return (
@@ -271,7 +272,7 @@ export function GanttTable({
               {/* ── Section Header ── */}
               <tr>
                 <td
-                  style={{ position:'sticky', left:0, zIndex:8, background: secBg, borderTop: secBorder, borderBottom:'1px solid #EEF2F7', height:34, minWidth:248, maxWidth:248, padding:0 }}
+                  style={{ position:'sticky', left:0, zIndex:8, background: secBg, borderTop: secBorder, borderBottom:'1px solid #BDC9D9', height:38, minWidth:248, maxWidth:248, padding:0 }}
                   onMouseEnter={() => setHoveredSectionId(section.id)}
                   onMouseLeave={() => setHoveredSectionId(null)}
                 >
@@ -292,7 +293,7 @@ export function GanttTable({
                       <span
                         onDoubleClick={() => handleSectionNameDoubleClick(section.id, section.name)}
                         title="ダブルクリックで名前を編集"
-                        style={{ fontSize:'.7rem', fontWeight:700, color:'#334155', cursor:'pointer', padding:'2px 3px', borderRadius:3, maxWidth:80, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}
+                        style={{ fontSize:'.73rem', fontWeight:800, color:'#1E293B', cursor:'pointer', padding:'2px 3px', borderRadius:3, maxWidth:85, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}
                       >
                         {section.name}
                       </span>
@@ -355,9 +356,9 @@ export function GanttTable({
                   const isMainEvent = (month as any).isMain
                   return (
                     <td key={month.id} style={{
-                      height:34,
-                      background: isMainEvent ? 'rgba(220,38,38,.04)' : isCurrentMonth ? 'rgba(37,99,235,.04)' : secBg,
-                      borderTop: secBorder, borderBottom:'1px solid #EEF2F7',
+                      height:38,
+                      background: isMainEvent ? 'rgba(220,38,38,.06)' : isCurrentMonth ? 'rgba(37,99,235,.06)' : secBg,
+                      borderTop: secBorder, borderBottom:'1px solid #BDC9D9',
                     }}></td>
                   )
                 })}
@@ -423,7 +424,7 @@ export function GanttTable({
                     style={{ opacity: draggedTaskId === task.id ? 0.35 : 1, transition:'opacity .1s' }}
                   >
                     <td
-                      style={{ position:'sticky', left:0, zIndex:7, background: isHovered ? hoverTaskBg : rowBg, borderBottom:'1px solid #EEF2F7', minWidth:248, maxWidth:248, borderRight:'1px solid #E8EDF3', padding:0, height:46, transition:'background .1s', boxShadow: dropShadow }}
+                      style={{ position:'sticky', left:0, zIndex:7, background: isHovered ? hoverTaskBg : rowBg, borderBottom:'1px solid #BDC9D9', minWidth:248, maxWidth:248, borderRight:'1px solid #E8EDF3', padding:0, height:46, transition:'background .1s', boxShadow: dropShadow }}
                     >
                       <div style={{ display:'flex', alignItems:'stretch', height:'100%' }}>
                         {/* 左のカラーバー（アラート時は赤/橙） */}
@@ -536,7 +537,7 @@ export function GanttTable({
                         <td key={month.id}
                           onClick={() => onCellClick(task.id, month.id, task.name, section.name, cell || spanningCell || null, section.id)}
                           style={{
-                            height:46, borderBottom:'1px solid #EEF2F7',
+                            height:46, borderBottom:'1px solid #BDC9D9',
                             textAlign:'center', cursor:'pointer', verticalAlign:'middle',
                             minWidth:86, position:'relative',
                             background: isHovered ? monthHoverBg : cellAlertBg,
@@ -582,7 +583,7 @@ export function GanttTable({
                     const isMainEvent = (month as any).isMain
                     return (
                       <td key={month.id} style={{
-                        height:26, borderBottom:'1px solid #EEF2F7',
+                        height:26, borderBottom:'1px solid #BDC9D9',
                         background: isMainEvent ? 'rgba(220,38,38,.04)' : isCurrentMonth ? 'rgba(37,99,235,.04)' : 'white',
                       }}></td>
                     )

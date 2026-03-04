@@ -78,14 +78,17 @@ export function MilestonePopover({ monthId, milestone, anchor, onClose, onSaved,
 
         {/* Text */}
         <div>
-          <label style={{ display:'block', fontSize:'.72rem', fontWeight:700, color:'#475569', marginBottom:4 }}>
-            テキスト
-          </label>
+          <div style={{ display:'flex', alignItems:'baseline', justifyContent:'space-between', marginBottom:4 }}>
+            <label style={{ fontSize:'.72rem', fontWeight:700, color:'#475569' }}>
+              イベント名
+            </label>
+            <span style={{ fontSize:'.63rem', color:'#94A3B8' }}>改行で複数入力可</span>
+          </div>
           <textarea
             value={text}
             onChange={e => setText(e.target.value)}
-            placeholder="マイルストーンの説明..."
-            style={{ width:'100%', padding:'6px 8px', fontSize:'.78rem', border:'1px solid #CBD5E1', borderRadius:6, resize:'none', height:64, outline:'none', fontFamily:'inherit', boxSizing:'border-box', lineHeight:1.5 }}
+            placeholder={"例:\n学校林散歩\n六華ゼミ/1"}
+            style={{ width:'100%', padding:'6px 8px', fontSize:'.78rem', border:'1px solid #CBD5E1', borderRadius:6, resize:'vertical', height:80, outline:'none', fontFamily:'inherit', boxSizing:'border-box', lineHeight:1.6 }}
           />
         </div>
 
