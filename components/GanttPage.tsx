@@ -96,7 +96,10 @@ export function GanttPage({ initialSections, initialMilestones }: GanttPageProps
         } else if (payload.eventType === 'UPDATE') {
           setMilestones(prev => prev.map(m => m.id === payload.new?.id ? { ...m, ...payload.new } : m))
         } else {
-          setMilestones(prev => [...prev, payload.new])
+          // INSERT: onAdded で既に追加済みの場合は重複しないようにする
+          setMilestones(prev =>
+            prev.find(m => m.id === payload.new?.id) ? prev : [...prev, payload.new]
+          )
         }
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sections' }, (payload: any) => {
