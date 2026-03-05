@@ -21,11 +21,12 @@ interface Props {
   onSectionChange?: (taskId: string, newSectionId: string) => void
   onLinkedSectionsChanged?: (taskId: string, linkedIds: string[]) => void
   onDueDateChanged?: (taskId: string, dueDate: string | null) => void
+  onMonthChanged?: (taskId: string, oldMonthId: number, newCell: TaskCell) => void
 }
 
 export function EditPanel({
   taskId, monthId, taskName, secName, sectionId,
-  cell, sections, taskLinkedSectionIds, onClose, onSaved, onDeleted, onTaskDeleted, onSectionChange, onLinkedSectionsChanged, onDueDateChanged
+  cell, sections, taskLinkedSectionIds, onClose, onSaved, onDeleted, onTaskDeleted, onSectionChange, onLinkedSectionsChanged, onDueDateChanged, onMonthChanged
 }: Props) {
   const isMobile = useIsMobile()
   const [status, setStatus] = useState(cell?.content || '')
@@ -39,8 +40,9 @@ export function EditPanel({
   const [loading, setLoading] = useState(false)
   const [selectedSectionId, setSelectedSectionId] = useState(sectionId)
   const [linkedSectionIds, setLinkedSectionIds] = useState<string[]>(taskLinkedSectionIds ?? [])
+  const [targetMonthId, setTargetMonthId] = useState(monthId)
 
-  const monthLabel = MONTHS.find(m => m.id === monthId)?.label || ''
+  const monthLabel = MONTHS.find(m => m.id === targetMonthId)?.label || ''
 
   useEffect(() => { loadComments() }, [])
 
@@ -82,13 +84,19 @@ export function EditPanel({
       const { data } = await (supabase.from('task_cells') as any)
         .upsert(
           {
-            task_id: taskId, month_id: monthId, content: status || null,
+            task_id: taskId, month_id: targetMonthId, content: status || null,
             assignee: assignee || null, memo: memo || null,
             cell_date: cellDate || null,
             cell_date_end: dateMode === 'range' ? (cellDateEnd || null) : null,
           },
           { onConflict: 'task_id, month_id' }
         ).select().single()
+
+      // 月が変わった場合は元のセルを削除して専用コールバックを呼ぶ
+      if (targetMonthId !== monthId && cell) {
+        await supabase.from('task_cells').delete().eq('id', cell.id)
+        if (onMonthChanged && data) { onMonthChanged(taskId, monthId, data as TaskCell); return }
+      }
       if (data) onSaved(data as TaskCell)
     } finally {
       setLoading(false)
@@ -196,7 +204,24 @@ export function EditPanel({
             <button onClick={onClose} style={{ width:26, height:26, borderRadius:6, background:'rgba(255,255,255,.12)', border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'.78rem', color:'rgba(255,255,255,.7)', fontFamily:'inherit' }}>✕</button>
           </div>
           <div style={{ fontSize:'.98rem', fontWeight:700, color:'white', marginBottom:7, lineHeight:1.3 }}>{taskName}</div>
-          <span style={{ display:'inline-flex', alignItems:'center', gap:4, background:'rgba(37,99,235,.25)', color:'#93c5fd', borderRadius:6, padding:'3px 9px', fontSize:'.71rem', fontWeight:600 }}>📅 {monthLabel}</span>
+          <div style={{ display:'inline-flex', alignItems:'center', gap:6, background:'rgba(37,99,235,.25)', borderRadius:6, padding:'3px 9px' }}>
+            <span style={{ fontSize:'.71rem', color:'#93c5fd' }}>📅</span>
+            <select
+              value={targetMonthId}
+              onChange={e => setTargetMonthId(Number(e.target.value))}
+              style={{
+                background:'transparent', border:'none', outline:'none', cursor:'pointer',
+                color:'#93c5fd', fontSize:'.71rem', fontWeight:600, fontFamily:'inherit',
+                appearance:'none', WebkitAppearance:'none',
+                paddingRight:12,
+              }}
+            >
+              {MONTHS.map(m => (
+                <option key={m.id} value={m.id} style={{ background:'#1e3a5f', color:'white' }}>{m.label}</option>
+              ))}
+            </select>
+            <span style={{ fontSize:'.6rem', color:'rgba(147,197,253,.6)', marginLeft:-8 }}>▾</span>
+          </div>
         </div>
 
         {/* Body */}

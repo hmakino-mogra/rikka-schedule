@@ -516,6 +516,26 @@ export function GanttPage({ initialSections, initialMilestones, initialCommentMa
             showToast('セルを削除しました')
             setEditPanel(null)
           }}
+          onMonthChanged={(taskId, oldMonthId, newCell) => {
+            setSections(prev =>
+              prev.map(sec => ({
+                ...sec,
+                tasks: sec.tasks.map(task =>
+                  task.id === taskId
+                    ? {
+                        ...task,
+                        cells: task.cells
+                          .filter(c => c.month_id !== oldMonthId)
+                          .filter(c => c.id !== newCell.id)
+                          .concat(newCell)
+                      }
+                    : task
+                )
+              }))
+            )
+            showToast('月を移動しました ✓')
+            setEditPanel(null)
+          }}
           onTaskDeleted={handleTaskDeleted}
           onSectionChange={handleTaskSectionChange}
           onLinkedSectionsChanged={(taskId, linkedIds) => {
