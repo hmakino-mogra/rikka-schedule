@@ -171,7 +171,7 @@ export function GanttTable({
     return (
       <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:2, padding:'2px 0' }}>
         {autoCompleted
-          ? <span style={{ fontSize:'.6rem', color:'#CBD5E1', fontStyle:'italic', lineHeight:1 }}>✓ 実施済</span>
+          ? <span style={{ display:'inline-flex', alignItems:'center', gap:3, padding:'2px 7px', borderRadius:11, fontSize:'.67rem', fontWeight:700, lineHeight:1, background:'#D1FAE5', color:'#059669' }}>✓ 済</span>
           : isReiwaDateContent
             ? null  // 令和日付コンテンツは下のチップで表示
             : renderStatusBadge(cell.content)
