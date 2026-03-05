@@ -311,11 +311,11 @@ export function GanttPage({ initialSections, initialMilestones, initialCommentMa
       {/* ── Header Row 1 ── */}
       <div style={{ height: isMobile ? 52 : 66, background:'#0D2137', color:'white', display:'flex', alignItems:'center', padding: isMobile ? '0 12px' : '0 20px', gap: isMobile ? 8 : 14, flexShrink:0, boxShadow:'0 2px 14px rgba(0,0,0,.35)', position:'relative' }}>
         {/* ロゴ */}
-        <div style={{ width: isMobile ? 32 : 38, height: isMobile ? 32 : 38, borderRadius: isMobile ? 8 : 9, background:'linear-gradient(135deg,#E8C96A,#9a7230)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, overflow:'hidden' }}>
+        <div style={{ width: isMobile ? 32 : 38, height: isMobile ? 32 : 38, borderRadius: isMobile ? 8 : 9, background:'#000', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, overflow:'hidden' }}>
           <img
-            src="/logo.jpg"
+            src="/logo.png"
             alt="logo"
-            style={{ width:'100%', height:'100%', objectFit:'cover' }}
+            style={{ width:'100%', height:'100%', objectFit:'contain' }}
             onError={e => { (e.currentTarget as HTMLImageElement).style.display='none'; (e.currentTarget.nextSibling as HTMLElement).style.display='flex' }}
           />
           <span style={{ display:'none', width:'100%', height:'100%', alignItems:'center', justifyContent:'center', fontSize: isMobile ? '.9rem' : '1.1rem' }}>🌸</span>
