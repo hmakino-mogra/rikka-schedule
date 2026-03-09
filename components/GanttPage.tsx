@@ -120,6 +120,7 @@ export function GanttPage({ initialSections, initialMilestones, initialCommentMa
   const daysUntilEvent = Math.ceil((new Date(2026, 9, 17).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
   const daysUntilTokyo = Math.ceil((new Date(2026, 5, 20).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
   const daysUntilGakkorin = Math.ceil((new Date(2026, 4, 11).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+  const daysUntilRikkaZemi = Math.ceil((new Date(2026, 5, 5).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
   const completedCount = sections.reduce(
     (total, sec) => total + sec.tasks.filter(t => t.cells.some(c => c.content === '済')).length, 0
   )
@@ -350,6 +351,9 @@ export function GanttPage({ initialSections, initialMilestones, initialCommentMa
         </div>
         <div style={{ background:'rgba(52,211,153,.1)', border:'1px solid rgba(52,211,153,.3)', borderRadius: isMobile ? 6 : 8, padding: isMobile ? '4px 8px' : '7px 13px', color:'#6EE7B7', fontSize: isMobile ? '.64rem' : '.76rem', whiteSpace:'nowrap', display:'flex', alignItems:'center', gap: isMobile ? 3 : 5 }}>
           🌲{!isMobile && ' 学校林散策まで'} <span style={{ fontSize: isMobile ? '.88rem' : '1.1rem', fontWeight:700 }}>{daysUntilGakkorin}</span> 日
+        </div>
+        <div style={{ background:'rgba(251,191,36,.1)', border:'1px solid rgba(251,191,36,.3)', borderRadius: isMobile ? 6 : 8, padding: isMobile ? '4px 8px' : '7px 13px', color:'#FCD34D', fontSize: isMobile ? '.64rem' : '.76rem', whiteSpace:'nowrap', display:'flex', alignItems:'center', gap: isMobile ? 3 : 5 }}>
+          📚{!isMobile && ' 六華ゼミまで'} <span style={{ fontSize: isMobile ? '.88rem' : '1.1rem', fontWeight:700 }}>{daysUntilRikkaZemi}</span> 日
         </div>
 
         <div style={{ flex:1 }}></div>

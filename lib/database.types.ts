@@ -105,6 +105,8 @@ export const MONTHS = [
   { id: 11, label: 'R8.8',  year: 2026, month: 8  },
   { id: 12, label: 'R8.9',  year: 2026, month: 9  },
   { id: 13, label: 'R8.10', year: 2026, month: 10, isMain: true },
+  { id: 14, label: 'R8.11', year: 2026, month: 11 },
+  { id: 15, label: 'R8.12', year: 2026, month: 12 },
 ] as const
 
 function computeCurrentMonthId(): number {
