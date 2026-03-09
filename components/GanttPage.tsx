@@ -46,6 +46,7 @@ export function GanttPage({ initialSections, initialMilestones, initialCommentMa
   const [searchQuery, setSearchQuery] = useState('')
   const [currentFilter, setCurrentFilter] = useState('すべて')
   const [sectionFilter, setSectionFilter] = useState('すべて')
+  const [assigneeFilter, setAssigneeFilter] = useState('すべて')
   const [toast, setToast] = useState<string | null>(null)
 
   const showToast = useCallback((msg: string) => {
@@ -146,10 +147,20 @@ export function GanttPage({ initialSections, initialMilestones, initialCommentMa
             (currentFilter === '未定'
               ? !task.cells.some(c => c.content === '済' || c.content === '予定')
               : task.cells.some(c => c.content === currentFilter))
-          return matchesSearch && matchesFilter
+          const matchesAssignee =
+            assigneeFilter === 'すべて' ||
+            task.cells.some(c => c.assignee && c.assignee.split(/[・、\s]+/).some(n => n === assigneeFilter))
+          return matchesSearch && matchesFilter && matchesAssignee
         })
       }
     })
+
+  // ── 担当者リスト（全セルから抽出・重複除去） ──
+  const allAssignees = Array.from(new Set(
+    sections.flatMap(sec => sec.tasks.flatMap(task =>
+      task.cells.flatMap(c => c.assignee ? c.assignee.split(/[・、\s]+/).filter(n => n.length > 0) : [])
+    ))
+  )).sort()
 
   // ── ハンドラー ──
   const handleCellClick = (taskId: string, monthId: number, taskName: string, secName: string, cell: TaskCell | null, sectionId: string) => {
@@ -451,6 +462,34 @@ export function GanttPage({ initialSections, initialMilestones, initialCommentMa
             )
           })}
         </div>
+
+        {/* 担当者フィルター */}
+        {allAssignees.length > 0 && (
+          <>
+            <div style={{ width:1, height:18, background:'rgba(255,255,255,.15)', flexShrink:0 }} />
+            <div style={{ position:'relative', flexShrink:0, display:'flex', alignItems:'center' }}>
+              <span style={{ position:'absolute', left:8, fontSize:'.72rem', pointerEvents:'none', zIndex:1 }}>👤</span>
+              <select
+                value={assigneeFilter}
+                onChange={e => setAssigneeFilter(e.target.value)}
+                style={{
+                  paddingLeft:24, paddingRight:10, paddingTop: isMobile ? 3 : 4, paddingBottom: isMobile ? 3 : 4,
+                  borderRadius:14, cursor:'pointer', fontFamily:'inherit',
+                  fontSize: isMobile ? '.65rem' : '.73rem', fontWeight:600,
+                  border: assigneeFilter !== 'すべて' ? '1px solid rgba(167,139,250,.6)' : '1px solid rgba(255,255,255,.15)',
+                  background: assigneeFilter !== 'すべて' ? 'rgba(167,139,250,.2)' : 'transparent',
+                  color: assigneeFilter !== 'すべて' ? '#C4B5FD' : 'rgba(255,255,255,.55)',
+                  outline:'none', appearance:'none', WebkitAppearance:'none',
+                }}
+              >
+                <option value="すべて" style={{ background:'#0D2137', color:'white' }}>担当者：全員</option>
+                {allAssignees.map(name => (
+                  <option key={name} value={name} style={{ background:'#0D2137', color:'white' }}>{name}</option>
+                ))}
+              </select>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Main Table */}
