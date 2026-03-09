@@ -321,7 +321,7 @@ export function GanttPage({ initialSections, initialMilestones, initialCommentMa
   return (
     <div style={{ width:'100%', height:'100dvh', display:'flex', flexDirection:'column', background:'white', overflowX:'hidden', overflowY:'hidden' }}>
       {/* ── Header Row 1 ── */}
-      <div style={{ height: isMobile ? 52 : 66, background:'#0D2137', color:'white', display:'flex', alignItems:'center', padding: isMobile ? '0 12px' : '0 20px', gap: isMobile ? 8 : 14, flexShrink:0, boxShadow:'0 2px 14px rgba(0,0,0,.35)', position:'relative' }}>
+      <div style={{ height: isMobile ? 52 : 66, background:'#0D2137', color:'white', display:'flex', alignItems:'center', padding: isMobile ? '0 12px' : '0 20px', gap: isMobile ? 8 : 14, flexShrink:0, boxShadow:'0 2px 14px rgba(0,0,0,.35)', position:'relative', overflowX: isMobile ? 'auto' : undefined }}>
         {/* ロゴ */}
         <div style={{ width: isMobile ? 32 : 38, height: isMobile ? 32 : 38, borderRadius: isMobile ? 8 : 9, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, overflow:'hidden' }}>
           <img
@@ -425,7 +425,7 @@ export function GanttPage({ initialSections, initialMilestones, initialCommentMa
         <div style={{ width:1, height:18, background:'rgba(255,255,255,.15)', flexShrink:0 }} />
 
         {/* 部フィルター（横スクロール対応） */}
-        <div style={{ display:'flex', gap: isMobile ? 3 : 4, overflowX:'auto', flex:1, alignItems:'center' }}>
+        <div style={{ display:'flex', gap: isMobile ? 3 : 4, overflowX: isMobile ? 'visible' : 'auto', flex: isMobile ? undefined : 1, flexShrink:0, alignItems:'center' }}>
           <button
             onClick={() => setSectionFilter('すべて')}
             style={{
