@@ -319,7 +319,7 @@ export function GanttPage({ initialSections, initialMilestones, initialCommentMa
   }
 
   return (
-    <div style={{ width:'100%', height:'100dvh', display:'flex', flexDirection:'column', background:'white', overflow:'hidden' }}>
+    <div style={{ width:'100%', height:'100dvh', display:'flex', flexDirection:'column', background:'white', overflowX:'hidden', overflowY:'hidden' }}>
       {/* ── Header Row 1 ── */}
       <div style={{ height: isMobile ? 52 : 66, background:'#0D2137', color:'white', display:'flex', alignItems:'center', padding: isMobile ? '0 12px' : '0 20px', gap: isMobile ? 8 : 14, flexShrink:0, boxShadow:'0 2px 14px rgba(0,0,0,.35)', position:'relative' }}>
         {/* ロゴ */}

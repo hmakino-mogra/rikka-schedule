@@ -31,4 +31,11 @@
   .custom-scroll::-webkit-scrollbar {
     display: none;
   }
+  /* iOS Safari 水平スクロール強制有効化 */
+  .custom-scroll {
+    -webkit-overflow-scrolling: touch;
+    overflow-x: scroll !important;
+    overflow-y: scroll !important;
+    scroll-snap-type: none;
+  }
 }

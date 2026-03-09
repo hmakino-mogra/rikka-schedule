@@ -221,10 +221,10 @@ export function GanttTable({
   return (
     <div
       ref={scrollRef}
-      style={{ height: TABLE_H, overflow:'auto', position:'relative', zIndex:0 }}
+      style={{ height: TABLE_H, overflowX:'scroll', overflowY:'scroll', position:'relative', zIndex:0, WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
       className="custom-scroll"
     >
-      <table style={{ borderCollapse:'collapse', width:'max-content', minWidth:'100%' }}>
+      <table style={{ borderCollapse:'collapse', width:'max-content', minWidth: `${TASK_COL_W + CELL_W * MONTHS.length}px` }}>
         <thead>
           {/* ── Month header row ── */}
           <tr>
