@@ -48,6 +48,7 @@ export function GanttPage({ initialSections, initialMilestones, initialCommentMa
   const [currentFilter, setCurrentFilter] = useState('すべて')
   const [sectionFilter, setSectionFilter] = useState('すべて')
   const [assigneeFilter, setAssigneeFilter] = useState('すべて')
+  const [zoomLevel, setZoomLevel] = useState(100)
   const [toast, setToast] = useState<string | null>(null)
 
   const showToast = useCallback((msg: string) => {
@@ -366,6 +367,26 @@ export function GanttPage({ initialSections, initialMilestones, initialCommentMa
           </div>
         )}
 
+        {/* ズームコントロール */}
+        {!isMobile && (
+          <div style={{ display:'flex', gap:2, alignItems:'center', flexShrink:0, background:'rgba(255,255,255,.06)', borderRadius:8, padding:'3px 5px' }}>
+            <span style={{ fontSize:'.62rem', color:'rgba(255,255,255,.35)', paddingLeft:2 }}>🔍</span>
+            {[100, 85, 70].map(level => (
+              <button
+                key={level}
+                onClick={() => setZoomLevel(level)}
+                style={{
+                  padding:'3px 7px', borderRadius:6, cursor:'pointer', fontFamily:'inherit',
+                  fontSize:'.65rem', fontWeight:700, whiteSpace:'nowrap', transition:'all .12s',
+                  border: zoomLevel === level ? '1px solid rgba(99,179,237,.6)' : '1px solid transparent',
+                  background: zoomLevel === level ? 'rgba(99,179,237,.25)' : 'transparent',
+                  color: zoomLevel === level ? '#90CDF4' : 'rgba(255,255,255,.38)',
+                }}
+              >{level}%</button>
+            ))}
+          </div>
+        )}
+
         {/* エクスポートボタン */}
         {!isMobile && (
           <button
@@ -506,6 +527,7 @@ export function GanttPage({ initialSections, initialMilestones, initialCommentMa
             </div>
           </>
         )}
+
       </div>
 
       {/* Main Table */}
@@ -514,6 +536,7 @@ export function GanttPage({ initialSections, initialMilestones, initialCommentMa
         milestones={milestones}
         currentFilter={currentFilter}
         searchQuery={searchQuery}
+        zoomLevel={zoomLevel}
         onCellClick={handleCellClick}
         onMilestoneClick={(monthId, anchor) => {
           setEditPanel(null)
