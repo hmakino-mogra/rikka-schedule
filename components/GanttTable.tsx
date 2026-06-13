@@ -9,6 +9,7 @@ interface Props {
   milestones: Milestone[]
   currentFilter: string
   searchQuery: string
+  zoomLevel?: number
   onCellClick: (taskId: string, monthId: number, taskName: string, secName: string, cell: TaskCell | null, sectionId: string) => void
   onMilestoneClick: (monthId: number, anchor: DOMRect) => void
   onDateChipClick: (taskId: string, dueDate: string | null, anchor: DOMRect) => void
@@ -79,13 +80,15 @@ export function GanttTable({
   onSectionMove,
   onTaskReorder,
   commentMap = {},
+  zoomLevel = 100,
 }: Props) {
   const isMobile = useIsMobile()
 
-  // レスポンシブ寸法
+  // レスポンシブ寸法（ズームレベル適用）
+  const zf = zoomLevel / 100
   const TASK_COL_W = isMobile ? 150 : 248
-  const CELL_W     = isMobile ? 70  : 86
-  const ROW_H      = isMobile ? 40  : 46
+  const CELL_W     = Math.round((isMobile ? 70  : 86)  * zf)
+  const ROW_H      = Math.round((isMobile ? 40  : 46)  * zf)
   const SEC_H      = isMobile ? 32  : 38
   const MS_H       = isMobile ? 44  : 60
   const MONTH_H    = isMobile ? 36  : 42
@@ -406,11 +409,11 @@ export function GanttTable({
                 // 完了タスク判定
                 const isDone = task.cells.some(c => c.content === '済')
 
-                // タスク行は白ベース（セクションカラー着色なし）
-                const sectionTint = '#FFFFFF'
+                // タスク行は白ベース（偶数行はごく薄いゼブラ）
+                const zebraBg = taskIdx % 2 === 1 ? 'rgba(241,245,249,.7)' : '#FFFFFF'
 
                 // アラートに応じた色設定
-                const rowBg    = alert === 'overdue' ? 'rgba(239,68,68,.04)'  : alert === 'delayed' ? 'rgba(245,158,11,.04)' : sectionTint
+                const rowBg    = alert === 'overdue' ? 'rgba(239,68,68,.04)'  : alert === 'delayed' ? 'rgba(245,158,11,.04)' : zebraBg
                 const barColor = alert === 'overdue' ? '#EF4444'              : alert === 'delayed' ? '#F59E0B'              : (section.color || '#94a3b8')
                 // ホバー時の行背景
                 const hoverTaskBg = alert === 'overdue' ? 'rgba(239,68,68,.08)' : alert === 'delayed' ? 'rgba(245,158,11,.08)' : '#F0F7FF'
@@ -548,13 +551,22 @@ export function GanttTable({
                         return rStart <= mEnd && rEnd >= mStart
                       }) ?? null) : null
 
+                      // ステータス別セル背景色
+                      const cellStatusBg = (() => {
+                        if (!cell?.content) return null
+                        if (cell.content === '済') return 'rgba(16,185,129,.10)'
+                        if (cell.content === '予定') return 'rgba(245,158,11,.09)'
+                        if (cell.content === '未定') return 'rgba(148,163,184,.08)'
+                        return 'rgba(59,130,246,.08)' // 日付・その他
+                      })()
+
                       // 遅延・期限切れの月セルは背景を強調
                       const cellAlertBg = (() => {
                         if (isMainEvent) return 'rgba(220,38,38,.03)'
-                        if (isCurrentMonth) return 'rgba(37,99,235,.03)'
+                        if (isCurrentMonth) return 'rgba(37,99,235,.04)'
                         if (alert !== 'ok' && alert !== 'done' && month.id < CURRENT_MONTH_ID && cell?.content === '予定')
                           return 'rgba(245,158,11,.06)'
-                        return '#FFFFFF'
+                        return cellStatusBg ?? (taskIdx % 2 === 1 ? 'rgba(241,245,249,.7)' : '#FFFFFF')
                       })()
                       // ホバー時の月セル背景
                       const monthHoverBg = isMainEvent
@@ -581,7 +593,7 @@ export function GanttTable({
                           style={{
                             height:ROW_H, borderBottom:'1px solid #BDC9D9', borderLeft:'1px solid #E4EBF2',
                             textAlign:'center', cursor:'pointer', verticalAlign:'middle',
-                            minWidth:86, position:'relative',
+                            minWidth:CELL_W, position:'relative',
                             background: isHovered ? monthHoverBg : cellAlertBg,
                             transition:'background .1s',
                             boxShadow: dropShadow,

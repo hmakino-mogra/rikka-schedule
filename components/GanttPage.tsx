@@ -369,21 +369,25 @@ export function GanttPage({ initialSections, initialMilestones, initialCommentMa
 
         {/* ズームコントロール */}
         {!isMobile && (
-          <div style={{ display:'flex', gap:2, alignItems:'center', flexShrink:0, background:'rgba(255,255,255,.06)', borderRadius:8, padding:'3px 5px' }}>
-            <span style={{ fontSize:'.62rem', color:'rgba(255,255,255,.35)', paddingLeft:2 }}>🔍</span>
-            {[100, 85, 70].map(level => (
-              <button
-                key={level}
-                onClick={() => setZoomLevel(level)}
-                style={{
-                  padding:'3px 7px', borderRadius:6, cursor:'pointer', fontFamily:'inherit',
-                  fontSize:'.65rem', fontWeight:700, whiteSpace:'nowrap', transition:'all .12s',
-                  border: zoomLevel === level ? '1px solid rgba(99,179,237,.6)' : '1px solid transparent',
-                  background: zoomLevel === level ? 'rgba(99,179,237,.25)' : 'transparent',
-                  color: zoomLevel === level ? '#90CDF4' : 'rgba(255,255,255,.38)',
-                }}
-              >{level}%</button>
-            ))}
+          <div style={{ display:'flex', alignItems:'center', gap:4, flexShrink:0 }}>
+            <span style={{ fontSize:'.68rem' }}>🔍</span>
+            <select
+              value={zoomLevel}
+              onChange={e => setZoomLevel(Number(e.target.value))}
+              style={{
+                padding:'4px 6px', borderRadius:6, fontFamily:'inherit',
+                fontSize:'.7rem', fontWeight:700, cursor:'pointer',
+                border:'1px solid rgba(99,179,237,.4)',
+                background:'rgba(99,179,237,.15)',
+                color:'#90CDF4',
+                outline:'none', appearance:'none', WebkitAppearance:'none',
+                width:62,
+              }}
+            >
+              <option value={100} style={{ background:'#0D2137', color:'white' }}>100%</option>
+              <option value={85}  style={{ background:'#0D2137', color:'white' }}>85%</option>
+              <option value={70}  style={{ background:'#0D2137', color:'white' }}>70%</option>
+            </select>
           </div>
         )}
 
