@@ -10,6 +10,7 @@ import { AddTaskModal } from './AddTaskModal'
 import { AddSectionModal } from './AddSectionModal'
 import { MilestonePopover } from './MilestonePopover'
 import { DatePopover } from './DatePopover'
+import { exportToExcel } from '@/lib/exportToExcel'
 
 interface GanttPageProps {
   initialSections: SectionWithTasks[]
@@ -363,6 +364,17 @@ export function GanttPage({ initialSections, initialMilestones, initialCommentMa
           <div style={{ fontSize:'.72rem', color:'rgba(255,255,255,.55)', whiteSpace:'nowrap' }}>
             進捗: <span style={{ color:'#E8C96A', fontWeight:700 }}>{completedCount}/{totalTasks} ({percentage}%)</span>
           </div>
+        )}
+
+        {/* エクスポートボタン */}
+        {!isMobile && (
+          <button
+            onClick={() => exportToExcel(sections, milestones)}
+            style={{ display:'flex', alignItems:'center', gap:5, padding:'7px 13px', background:'rgba(52,211,153,.12)', color:'#6EE7B7', border:'1px solid rgba(52,211,153,.3)', borderRadius:7, fontSize:'.76rem', fontWeight:700, cursor:'pointer', fontFamily:'inherit', whiteSpace:'nowrap' }}
+            title="Excelエクスポート"
+          >
+            📥 Excel出力
+          </button>
         )}
 
         {/* セクション追加ボタン */}
